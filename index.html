@@ -398,7 +398,7 @@ const SCI=`<summary>Phone se aura scan kaise hota hai?</summary>
 <div class="sci-body">
  <p class="muted">Is scanner ke peeche ki technology aur physics, seedhe shabdon mein.</p>
  <div class="step"><span class="n">01</span><div><h3>ROSHNI HI DATA HAI</h3><p>Har cheez se roshni (photons) takra kar lautti hai. Phone ke camera mein CMOS sensor hota hai jisme laakhon chhote light-sensor (pixels) lage hote hain. Har pixel par padne wale photons <b>photoelectric effect</b> se electric signal ban jaate hain, aur har pixel Red, Green, Blue teen rang ki matra naapta hai. Ek second mein camera 30 se 60 aise frame leta hai.</p></div></div>
- <div class="step"><span class="n">02</span><div><h3>AI HUMAN DETECTION</h3><p>App ke andar ek <b>AI pose model</b> chalta hai jo har frame mein shareer ke 33 bindu (sir, aankhein, kandhe, kamar) pehchaanta hai. Isi se pata chalta hai ki frame mein asli insaan hai, aur saaton chakra aapke shareer ki sahi jagah par lagte hain. Insaan na ho toh scan shuru hi nahi hota.</p></div></div>
+ <div class="step"><span class="n">02</span><div><h3>HUMAN BODY DETECTION</h3><p>App ke andar ek <b>computer vision pose model</b> chalta hai jo har frame mein shareer ke 33 bindu (sir, aankhein, kandhe, kamar) pehchaanta hai. Isi se pata chalta hai ki frame mein asli insaan hai, aur saaton chakra aapke shareer ki sahi jagah par lagte hain. Insaan na ho toh scan shuru hi nahi hota.</p></div></div>
  <div class="step"><span class="n">03</span><div><h3>LIVE SPECTRAL ANALYSIS</h3><p>Scan ke dauraan app har frame ke pixels padhta hai aur screen par asli naap dikhata hai: <b>Luminance</b> (kitni roshni aap par hai), <b>Color temperature</b> (roshni garam hai ya thandi, Kelvin mein) aur <b>Spectral balance</b> (R, G, B ka anupaat).</p></div></div>
  <div class="step"><span class="n">04</span><div><h3>SHAREER KI APNI ROSHNI</h3><p>Jeevit shareer bhi roshni aur urja chhodta hai. Har cell bahut halki roshni deta hai jise <b>biophoton emission</b> kehte hain, jo lab ke vishesh cameras se naapi gayi hai. Shareer ki garmi <b>infrared</b> rays chhodti hai jo thermal camera mein chamakti hai. <b>Kirlian photography</b> mein high-voltage field ungliyon ke chaaron taraf chamakta ghera dikhati hai.</p></div></div>
  <div class="step"><span class="n">05</span><div><h3>PRITHVI KI DHADKAN</h3><p>Prithvi aur aakash ke beech electromagnetic field <b>7.83 Hz</b> par gunjti hai, jise Schumann Resonance kehte hain. Isliye scan ka base frequency 7.83 Hz rakha gaya hai.</p></div></div>
@@ -453,14 +453,17 @@ function silhouette(w,h){const c=document.createElement('canvas');c.width=w;c.he
  x.beginPath();x.ellipse(w/2,h*.3,w*.13,h*.12,0,0,7);x.fill();x.stroke();
  x.beginPath();x.moveTo(w*.44,h*.41);x.lineTo(w*.56,h*.41);x.bezierCurveTo(w*.6,h*.46,w*.82,h*.47,w*.88,h*.58);x.lineTo(w*.95,h);x.lineTo(w*.05,h);x.lineTo(w*.12,h*.58);x.bezierCurveTo(w*.18,h*.47,w*.4,h*.46,w*.44,h*.41);x.closePath();x.fill();x.stroke();return c}
 
-/* ================= AI HUMAN DETECTION (MediaPipe Pose) ================= */
+/* ================= HUMAN BODY DETECTION (MediaPipe Pose) ================= */
 const det={state:'idle',lm:null,seen:0,conf:0,pl:null};
 async function loadDetector(){if(det.state!=='idle')return;det.state='loading';
- try{const V='0.10.14';const mp=await import(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${V}/vision_bundle.mjs`);
-  const fs=await mp.FilesetResolver.forVisionTasks(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${V}/wasm`);
-  const opts=d=>({baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',delegate:d},runningMode:'VIDEO',numPoses:1,minPoseDetectionConfidence:.5,minPosePresenceConfidence:.5});
+ const V='0.10.14',CDN=`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${V}`;
+ const SRCS=[[new URL('mp/vision_bundle.mjs',location.href).href,new URL('mp/wasm',location.href).href,new URL('models/pose_landmarker_lite.task',location.href).href],
+  [`${CDN}/vision_bundle.mjs`,`${CDN}/wasm`,'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task']];
+ for(const[mjs,wasm,model]of SRCS){try{const mp=await import(mjs);const fs=await mp.FilesetResolver.forVisionTasks(wasm);
+  const opts=d=>({baseOptions:{modelAssetPath:model,delegate:d},runningMode:'VIDEO',numPoses:1,minPoseDetectionConfidence:.5,minPosePresenceConfidence:.5});
   try{det.pl=await mp.PoseLandmarker.createFromOptions(fs,opts('GPU'))}catch(e){det.pl=await mp.PoseLandmarker.createFromOptions(fs,opts('CPU'))}
-  det.state='ready'}catch(e){det.state='failed'}}
+  det.state='ready';return}catch(e){}}
+ det.state='failed'}
 let lastDetT=0,lastVT=-1;
 function runDetect(now){if(det.state!=='ready'||!src)return;
  try{if(src===vid){if(vid.readyState<2||vid.currentTime===lastVT)return;lastVT=vid.currentTime}else if(now-lastDetT<150)return;
@@ -542,7 +545,7 @@ function tick(now){raf=requestAnimationFrame(tick);const w=cv.width,h=cv.height,
  x.fillStyle=phase==='scan'?'rgba(10,4,30,.38)':'rgba(10,4,30,.25)';x.fillRect(0,0,w,h);
  x.save();x.strokeStyle='rgba(88,240,226,.07)';x.lineWidth=1;const gs=40*f;for(let gx=(w/2)%gs;gx<w;gx+=gs){x.beginPath();x.moveTo(gx,0);x.lineTo(gx,h);x.stroke()}for(let gy=0;gy<h;gy+=gs){x.beginPath();x.moveTo(0,gy);x.lineTo(w,gy);x.stroke()}x.restore();
  x.save();x.strokeStyle='rgba(245,191,79,.8)';x.lineWidth=2*f;const bm=24*f,bl=34*f,top=80*f,bot=h-170*f;[[bm,top,1,1],[w-bm,top,-1,1],[bm,bot,1,-1],[w-bm,bot,-1,-1]].forEach(([a,b,p,q])=>{x.beginPath();x.moveTo(a,b+bl*q);x.lineTo(a,b);x.lineTo(a+bl*p,b);x.stroke()});x.restore();
- // AI body box + skeleton
+ // body box + skeleton
  if(isP){const[sw,sh]=srcDims();const vis=det.lm.slice(0,25).filter(q=>(q.visibility??1)>.5).map(q=>mapPt(q.x*sw,q.y*sh,w,h));
   if(vis.length){let x1=Math.min(...vis.map(q=>q.x))-20*f,x2=Math.max(...vis.map(q=>q.x))+20*f,y1=Math.min(...vis.map(q=>q.y))-m*.12,y2=Math.max(...vis.map(q=>q.y))+20*f;x1=clamp(x1,8,w-8);x2=clamp(x2,8,w-8);y1=clamp(y1,top+30*f,h-8);y2=clamp(y2,8,bot);
    x.save();x.strokeStyle='rgba(61,220,132,.9)';x.lineWidth=2*f;const cl=18*f;[[x1,y1,1,1],[x2,y1,-1,1],[x1,y2,1,-1],[x2,y2,-1,-1]].forEach(([a,b,p,q])=>{x.beginPath();x.moveTo(a,b+cl*q);x.lineTo(a,b);x.lineTo(a+cl*p,b);x.stroke()});
@@ -556,7 +559,7 @@ function tick(now){raf=requestAnimationFrame(tick);const w=cv.width,h=cv.height,
  x.save();x.font=`${11*f}px "IBM Plex Mono",monospace`;x.fillStyle='rgba(88,240,226,.9)';x.shadowColor='rgba(88,240,226,.8)';x.shadowBlur=6*f;
  const lx=bm+4*f,ly=top+bl+20*f,lh=16*f;
  const aiTxt=det.state==='ready'?(isP?`LOCK ${Math.round(det.conf*100)}%`:'SEARCHING'):det.state==='loading'?'LOADING':'OFF';
- [`BIO-FIELD  7.83 Hz`,`LUMINANCE  ${liveStats.L.toFixed(1)}%`,`COLOR TEMP ${liveStats.K} K`,`SPECTRUM   R${liveStats.r.toFixed(0)} G${liveStats.g.toFixed(0)} B${liveStats.b.toFixed(0)}`,`AI BODY    ${aiTxt}`].forEach((s,i)=>x.fillText(s,lx,ly+i*lh));
+ [`BIO-FIELD  7.83 Hz`,`LUMINANCE  ${liveStats.L.toFixed(1)}%`,`COLOR TEMP ${liveStats.K} K`,`SPECTRUM   R${liveStats.r.toFixed(0)} G${liveStats.g.toFixed(0)} B${liveStats.b.toFixed(0)}`,`BODY FIELD ${aiTxt}`].forEach((s,i)=>x.fillText(s,lx,ly+i*lh));
  x.textAlign='right';x.fillStyle='rgba(245,191,79,.95)';x.shadowColor='rgba(245,191,79,.8)';
  const scanPct=phase==='scan'?clamp(tt/T*100,0,100):0;
  [`HKV ENGINE v6`,`ZONES 16/16`,`SCAN ${scanPct.toFixed(0)}%`,phase==='scan'&&R?`SIG ${R.id}`:'SIG ——',phase==='scan'&&tt>9.4&&R?`FREQ ${R.freq} Hz`:''].forEach((s,i)=>x.fillText(s,w-lx,ly+i*lh));x.restore();
@@ -566,7 +569,7 @@ function tick(now){raf=requestAnimationFrame(tick);const w=cv.width,h=cv.height,
   if(okNow){if(!presentSince)presentSince=now}else presentSince=0;
   const rdy=!!presentSince&&now-presentSince>500,btn=$('#scanBtn');
   if(btn.disabled===rdy){btn.disabled=!rdy;if(rdy){Snd.beep(990,.12,.12);vib(25)}}
-  const st=det.state==='failed'?'Kandhe aur chehra frame mein rakh ke SCAN dabaayein':det.state!=='ready'?'AI body detector load ho raha hai…':isP?'Insaan detect hua. SCAN dabaayein':'Koi insaan nahi dikha. Frame mein aayein';
+  const st=det.state==='failed'?'Kandhe aur chehra frame mein rakh ke SCAN dabaayein':det.state!=='ready'?'Bio-field sensor calibrate ho raha hai…':isP?'Insaan detect hua. SCAN dabaayein':'Koi insaan nahi dikha. Frame mein aayein';
   const se=$('#stStatus');if(se.textContent!==st)se.textContent=st;
   P.forEach((p,i)=>drawChakraDot(x,p.x,p.y,CHAKRAS[i].hex,isP?.5:.18,ts,m*.02));
  }
