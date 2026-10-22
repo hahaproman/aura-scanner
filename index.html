@@ -8,10 +8,11 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}</style>
 <title>HKV Aura Scanner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Mukta:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 /* Layout: one-column phone app; full-screen camera stage for scanning, scrolling report afterwards. Single deliberate dark look. */
 :root{
@@ -23,6 +24,7 @@
   --fd:'Marcellus',Georgia,serif; --fb:'Mukta',system-ui,sans-serif; --fm:'IBM Plex Mono',ui-monospace,monospace;
 }
 html,body{height:100%}
+[hidden]{display:none!important}
 body{background:var(--void);color:var(--text);font-family:var(--fb);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--void)}
 .wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 48px;display:flex;flex-direction:column;gap:18px}
@@ -35,14 +37,18 @@ button,.btn{font:inherit;cursor:pointer;border:none}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;border-radius:14px;font-weight:700;font-size:16px;text-decoration:none;color:var(--text);background:var(--panel);border:1px solid var(--line)}
 .btn.primary{background:linear-gradient(135deg,var(--gold),var(--saffron));color:#1a0f00;border:none;box-shadow:0 0 28px rgba(245,191,79,.35)}
 .btn.cyan{background:transparent;border:1px solid var(--cyan);color:var(--cyan)}
+.btn.danger{background:transparent;border:1px solid var(--bad);color:var(--bad)}
+.btn.small{padding:8px 12px;font-size:13px;border-radius:10px}
 .btn.block{width:100%}
-.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.btn[disabled]{opacity:.55;cursor:wait}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
 .brand canvas{width:40px;height:40px;flex:none}
 .brand b{font-family:var(--fd);font-weight:400;font-size:17px;letter-spacing:.06em;color:var(--gold);display:block;line-height:1.1}
 .brand small{font-size:12px;color:var(--muted);display:block}
-.chip{font-family:var(--fm);font-size:12px;padding:6px 10px;border-radius:99px;border:1px solid var(--line);background:var(--deep);color:var(--muted)}
+.chip{font-family:var(--fm);font-size:12px;padding:6px 10px;border-radius:99px;border:1px solid var(--line);background:var(--deep);color:var(--muted);flex:none}
 .chip.on{color:var(--cyan);border-color:var(--cyan)}
+.back{width:38px;height:38px;border-radius:12px;background:var(--deep);border:1px solid var(--line);color:var(--text);font-size:22px;line-height:1;display:grid;place-items:center;flex:none}
 
 /* splash */
 #splash .wrap{min-height:100%;justify-content:center;text-align:center;align-items:center;gap:22px}
@@ -57,15 +63,20 @@ input,select{font:inherit;font-size:17px;color:var(--text);background:var(--void
 input:focus,select:focus{border-color:var(--gold);outline:none}
 .err{color:var(--bad);font-size:14px}
 .hist{display:flex;flex-direction:column;gap:8px}
-.hrow{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;background:var(--void);border:1px solid var(--line);color:var(--text);text-align:left;width:100%}
+.hitem{display:flex;align-items:center;gap:8px}
+.hrow{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;background:var(--void);border:1px solid var(--line);color:var(--text);text-align:left;flex:1;min-width:0}
 .hrow img{width:44px;height:58px;object-fit:cover;border-radius:8px;flex:none}
 .hrow div{min-width:0;flex:1}
 .hrow b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hrow small{color:var(--muted);font-size:12px}
+.hdel{width:40px;height:40px;border-radius:12px;background:transparent;border:1px solid var(--line);color:var(--bad);font-size:18px;flex:none}
+.hhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px}
 .dot{width:14px;height:14px;border-radius:50%;flex:none;box-shadow:0 0 10px currentColor}
 
 details.sci{background:var(--deep);border:1px solid var(--line);border-radius:18px;padding:4px 18px}
 details.sci summary{cursor:pointer;padding:14px 0;font-family:var(--fd);font-size:19px;color:var(--gold);list-style:none;display:flex;justify-content:space-between;gap:10px}
+details.sci summary::-webkit-details-marker{display:none}
 details.sci summary::after{content:"+";font-family:var(--fm);color:var(--cyan)}
 details.sci[open] summary::after{content:"–"}
 .sci-body{display:flex;flex-direction:column;gap:14px;padding-bottom:18px;font-size:15px}
@@ -86,6 +97,7 @@ details.sci[open] summary::after{content:"–"}
 .prog{width:100%;max-width:420px;height:4px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}
 .prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--gold));box-shadow:0 0 12px var(--cyan)}
 #scanBtn{width:84px;height:84px;border-radius:50%;background:radial-gradient(circle,var(--gold),var(--saffron));color:#1a0f00;font-family:var(--fm);font-weight:600;font-size:13px;letter-spacing:.08em;box-shadow:0 0 0 6px rgba(245,191,79,.25),0 0 40px rgba(255,138,42,.6);animation:pulse 1.6s infinite}
+#scanBtn[disabled]{filter:grayscale(1) brightness(.6);animation:none;cursor:not-allowed}
 @keyframes pulse{50%{box-shadow:0 0 0 14px rgba(245,191,79,.08),0 0 60px rgba(255,138,42,.8)}}
 #fallback{position:absolute;inset:0;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));background:rgba(7,6,15,.92)}
 #fallback .card{max-width:420px;text-align:center}
@@ -119,7 +131,7 @@ details.sci[open] summary::after{content:"–"}
 .metric{background:var(--void);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
 .metric small{color:var(--muted);font-size:12px;display:block}
 .metric b{font-family:var(--fm);font-size:22px;font-variant-numeric:tabular-nums}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:15px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:15px;margin:0}
 .kv dt{color:var(--muted)}
 .kv dd{margin:0;font-weight:700;min-width:0}
 ul.list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
@@ -131,10 +143,19 @@ ul.upay li::marker{color:var(--gold)}
 .row>*{flex:1 1 150px}
 .sig{font-family:var(--fm);font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .foot{font-size:12px;color:var(--muted);text-align:center}
+.shot{border-radius:14px;border:1px solid var(--line);width:100%;display:block}
+.numtiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.numtile{background:var(--void);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;min-width:0}
+.numtile b{display:block;font-family:var(--fd);font-size:30px;color:var(--gold);line-height:1.1}
+.numtile small{color:var(--muted);font-size:12px}
+.loshu{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:260px;margin:0 auto;width:100%}
+.loshu span{aspect-ratio:1;border-radius:10px;display:grid;place-items:center;font-family:var(--fm);font-size:20px;font-weight:600;border:1px solid var(--line);background:var(--void)}
+.loshu span.has{color:#1a0f00;background:linear-gradient(135deg,var(--gold),var(--saffron));border-color:transparent}
+.loshu span.miss{color:var(--line)}
 .modal{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.88);display:grid;place-items:center;padding:20px max(16px,env(safe-area-inset-right,0px)) 20px max(16px,env(safe-area-inset-left,0px))}
 .modal .card{max-width:420px;max-height:90vh;overflow:auto}
 .modal img{border-radius:12px}
-.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%);background:var(--panel);border:1px solid var(--cyan);color:var(--text);padding:10px 16px;border-radius:12px;z-index:90;font-size:14px}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%);background:var(--panel);border:1px solid var(--cyan);color:var(--text);padding:10px 16px;border-radius:12px;z-index:90;font-size:14px;max-width:calc(100vw - 32px)}
 @media (prefers-reduced-motion:reduce){#scanBtn{animation:none}}
 </style>
 </head>
@@ -158,7 +179,7 @@ ul.upay li::marker{color:var(--gold)}
 <section id="form" class="screen" hidden>
   <div class="wrap">
     <div class="topbar">
-      <div class="brand"><canvas class="logo" width="80" height="80"></canvas><div><b>HARE KRISHNA VASTU</b><small>Harssh Bhardwaj · Aura Scanner</small></div></div>
+      <div class="brand"><button class="back" type="button" data-back aria-label="Peeche">‹</button><canvas class="logo" width="80" height="80"></canvas><div><b>HARE KRISHNA VASTU</b><small>Harssh Bhardwaj · Aura Scanner</small></div></div>
       <button class="chip on sndBtn" type="button">Sound On</button>
     </div>
     <div>
@@ -181,7 +202,8 @@ ul.upay li::marker{color:var(--gold)}
     </form>
 
     <div class="card" id="histCard" hidden>
-      <p class="eyebrow">Pichhle Scans</p>
+      <div class="hhead"><p class="eyebrow">Pichhle Scans</p><button class="btn danger small" id="delAll" type="button">Sab Delete</button></div>
+      <div class="confirm" id="delConfirm" hidden><span>Saare scans hamesha ke liye hat jayenge.</span><button class="btn danger small" id="delYes" type="button">Haan, Delete</button><button class="btn small" id="delNo" type="button">Nahi</button></div>
       <div class="hist" id="hist"></div>
     </div>
 
@@ -195,7 +217,7 @@ ul.upay li::marker{color:var(--gold)}
   <video id="vid" playsinline muted></video>
   <canvas id="scv"></canvas>
   <div class="st-top">
-    <button class="iconbtn" id="stClose" type="button">Band Karein</button>
+    <button class="iconbtn" id="stClose" type="button">‹ Peeche</button>
     <b>HKV AURA SCAN</b>
     <button class="iconbtn sndBtn" type="button">Sound On</button>
   </div>
@@ -207,13 +229,13 @@ ul.upay li::marker{color:var(--gold)}
   <div id="fallback" hidden>
     <div class="card">
       <p class="eyebrow">Camera</p>
-      <h3 style="font-size:22px">Live camera yahan nahi khul paaya</h3>
-      <p class="muted" style="font-size:14px" id="fbMsg">Is view mein live camera ki permission nahi hai. App install karke (APK) live scan chalega. Abhi photo kheench ke wahi VFX scan chala sakte hain.</p>
+      <h3 style="font-size:22px">Live camera nahi khul paaya</h3>
+      <p class="muted" style="font-size:14px">Camera ki permission nahi mili. Phone ki settings mein app ko camera allow karein, ya photo kheench ke wahi scan chalaayein.</p>
+      <button class="btn cyan block" id="retryCam" type="button">Camera Dobara Try Karein</button>
       <label class="btn primary block" for="capIn">Selfie Kheenchein</label>
       <input id="capIn" type="file" accept="image/*" capture="user" hidden>
-      <label class="btn cyan block" for="galIn">Gallery se Photo</label>
+      <label class="btn block" for="galIn">Gallery se Photo</label>
       <input id="galIn" type="file" accept="image/*" hidden>
-      <button class="btn block" id="noPhoto" type="button">Bina Photo Scan</button>
     </div>
   </div>
 </section>
@@ -222,7 +244,7 @@ ul.upay li::marker{color:var(--gold)}
 <section id="result" class="screen" hidden>
   <div class="wrap">
     <div class="topbar">
-      <div class="brand"><canvas class="logo" width="80" height="80"></canvas><div><b>HARE KRISHNA VASTU</b><small>Aura Scan Report</small></div></div>
+      <div class="brand"><button class="back" type="button" data-back aria-label="Peeche">‹</button><canvas class="logo" width="80" height="80"></canvas><div><b>HARE KRISHNA VASTU</b><small>Aura Scan Report</small></div></div>
       <button class="chip on sndBtn" type="button">Sound On</button>
     </div>
     <div id="rBody"></div>
@@ -245,15 +267,15 @@ const lerp=(a,b,t)=>a+(b-a)*t;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function rgba(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`}
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2400)}
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
+const vib=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
 
 /* ================= SOUND ENGINE (synthesised, no files) ================= */
 const Snd={ac:null,master:null,on:true,drone:null,
- init(){if(this.ac)return;try{this.ac=new (window.AudioContext||window.webkitAudioContext)();this.master=this.ac.createGain();this.master.gain.value=this.on?.7:0;this.master.connect(this.ac.destination)}catch(e){}},
+ init(){if(this.ac){if(this.ac.state==='suspended')this.ac.resume();return}try{this.ac=new (window.AudioContext||window.webkitAudioContext)();this.master=this.ac.createGain();this.master.gain.value=this.on?.7:0;this.master.connect(this.ac.destination)}catch(e){}},
  now(){return this.ac?this.ac.currentTime:0},
  toggle(){this.on=!this.on;if(this.master)this.master.gain.setTargetAtTime(this.on?.7:0,this.now(),.05);$$('.sndBtn').forEach(b=>{b.textContent=this.on?'Sound On':'Sound Off';b.classList.toggle('on',this.on)})},
- startDrone(){ // Om tone 136.1 Hz with its octave below and fifth
-  if(!this.ac||this.drone)return;const ac=this.ac,g=ac.createGain();g.gain.value=0;const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;lp.connect(g);g.connect(this.master);
+ startDrone(){if(!this.ac||this.drone)return;const ac=this.ac,g=ac.createGain();g.gain.value=0;const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;lp.connect(g);g.connect(this.master);
   const oscs=[[136.1,'sine',.5],[68.05,'sine',.45],[204.15,'triangle',.12],[272.2,'sine',.08],[137.0,'sine',.3]].map(([f,t,v])=>{const o=ac.createOscillator(),og=ac.createGain();o.type=t;o.frequency.value=f;og.gain.value=v;o.connect(og);og.connect(lp);o.start();return o});
   const lfo=ac.createOscillator(),lg=ac.createGain();lfo.frequency.value=.18;lg.gain.value=250;lfo.connect(lg);lg.connect(lp.frequency);lfo.start();
   g.gain.linearRampToValueAtTime(.16,ac.currentTime+3);this.drone={g,oscs,lfo}},
@@ -261,7 +283,7 @@ const Snd={ac:null,master:null,on:true,drone:null,
  bell(f=660,v=.35){if(!this.ac)return;const ac=this.ac,t=ac.currentTime;[[1,1],[2.76,.5],[5.4,.28],[8.93,.14],[1.5,.2]].forEach(([m,a])=>{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f*m;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v*a,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+3.5/m+.4);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+5)})},
  beep(f=880,d=.12,v=.18,type='sine'){if(!this.ac)return;const ac=this.ac,t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+d+.05)},
  sweep(f1,f2,d,v=.12){if(!this.ac)return;const ac=this.ac,t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain(),bp=ac.createBiquadFilter();o.type='sawtooth';bp.type='bandpass';bp.Q.value=6;o.frequency.setValueAtTime(f1,t);o.frequency.exponentialRampToValueAtTime(f2,t+d);bp.frequency.setValueAtTime(f1*2,t);bp.frequency.exponentialRampToValueAtTime(f2*2,t+d);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+d*.2);g.gain.linearRampToValueAtTime(0,t+d);o.connect(bp);bp.connect(g);g.connect(this.master);o.start(t);o.stop(t+d+.1)},
- whoosh(d=1.2,v=.25){if(!this.ac)return;const ac=this.ac,t=ac.currentTime,len=ac.sampleRate*d,b=ac.createBuffer(1,len,ac.sampleRate),ch=b.getChannelData(0);for(let i=0;i<len;i++)ch[i]=(Math.random()*2-1);const s=ac.createBufferSource();s.buffer=b;const f=ac.createBiquadFilter();f.type='bandpass';f.Q.value=1.5;f.frequency.setValueAtTime(300,t);f.frequency.exponentialRampToValueAtTime(3000,t+d*.7);const g=ac.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+d*.5);g.gain.linearRampToValueAtTime(0,t+d);s.connect(f);f.connect(g);g.connect(this.master);s.start(t)},
+ whoosh(d=1.2,v=.25){if(!this.ac)return;const ac=this.ac,t=ac.currentTime,len=Math.floor(ac.sampleRate*d),b=ac.createBuffer(1,len,ac.sampleRate),ch=b.getChannelData(0);for(let i=0;i<len;i++)ch[i]=(Math.random()*2-1);const s=ac.createBufferSource();s.buffer=b;const f=ac.createBiquadFilter();f.type='bandpass';f.Q.value=1.5;f.frequency.setValueAtTime(300,t);f.frequency.exponentialRampToValueAtTime(3000,t+d*.7);const g=ac.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+d*.5);g.gain.linearRampToValueAtTime(0,t+d);s.connect(f);f.connect(g);g.connect(this.master);s.start(t)},
  glitch(){for(let i=0;i<4;i++)setTimeout(()=>this.beep(200+Math.random()*1800,.04,.08,'square'),i*35)}
 };
 $$('.sndBtn').forEach(b=>b.addEventListener('click',()=>{Snd.init();Snd.toggle()}));
@@ -282,7 +304,8 @@ function drawMandala(c,t,big){
  x.restore();
 }
 const mand=$('#mandala');let splashOn=true;
-(function loop(now){if(splashOn){drawMandala(mand,now/1000,true);requestAnimationFrame(loop)}})(0);
+function splashLoop(n){if(splashOn){drawMandala(mand,n/1000,true);requestAnimationFrame(splashLoop)}}
+requestAnimationFrame(splashLoop);
 $$('canvas.logo').forEach(c=>drawMandala(c,0,false));
 
 /* ================= DETERMINISTIC ENERGY SIGNATURE ================= */
@@ -290,26 +313,26 @@ function cyrb128(s){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;
 function sfc32(a,b,c,d){return()=>{a>>>=0;b>>>=0;c>>>=0;d>>>=0;let t=(a+b)|0;a=b^b>>>9;b=c+(c<<3)|0;c=(c<<21|c>>>11);d=d+1|0;t=t+d|0;c=c+t|0;return(t>>>0)/4294967296}}
 
 const AURAS=[
- {n:'Sunehri',en:'Golden',hex:'#ffcc4d',m:'Guru kripa aur divine suraksha aapke saath hai. Log aapke paas aakar shaanti mehsoos karte hain.'},
- {n:'Kesariya',en:'Saffron',hex:'#ff8a2a',m:'Aatmavishwas aur creativity tez hai. Naye kaam ki shuruaat ka samay hai.'},
- {n:'Hara',en:'Emerald',hex:'#2fd38a',m:'Aapki urja healing wali hai. Aap doosron ka dard samajhte aur kam karte hain.'},
- {n:'Neela',en:'Sky Blue',hex:'#4fb7ff',m:'Sachchi aur shaant vaani. Aapki baat logon par gehra asar karti hai.'},
- {n:'Jamuni-Neela',en:'Indigo',hex:'#7174ff',m:'Teesri aankh jaagrit hai. Aapka antarman (intuition) bahut strong hai.'},
- {n:'Baingani',en:'Violet',hex:'#b06cff',m:'Bhakti aur adhyatm ki urja. Aap par ishwar ki vishesh drishti hai.'},
- {n:'Gulabi',en:'Rose Pink',hex:'#ff6fae',m:'Prem aur karuna se bhari urja. Rishton mein mithaas laate hain.'},
- {n:'Lal',en:'Ruby Red',hex:'#ff4f4f',m:'Josh aur shakti bharpoor hai. Bas gusse ko sahi disha dena zaroori hai.'},
- {n:'Peela',en:'Sun Yellow',hex:'#ffe14d',m:'Buddhi aur khushi ki urja. Seekhne aur sikhane mein aap aage rehte hain.'},
- {n:'Chaandi',en:'Silver White',hex:'#dfe8ff',m:'Saatvik aur pavitra urja. Mann saaf hai, isliye nazar jaldi lagti hai.'}];
+ {n:'Sunehri',en:'Golden',hi:'सुनहरा',hex:'#ffcc4d',m:'Guru kripa aur divine suraksha aapke saath hai. Log aapke paas aakar shaanti mehsoos karte hain.'},
+ {n:'Kesariya',en:'Saffron',hi:'केसरिया',hex:'#ff8a2a',m:'Aatmavishwas aur creativity tez hai. Naye kaam ki shuruaat ka samay hai.'},
+ {n:'Hara',en:'Emerald',hi:'हरा',hex:'#2fd38a',m:'Aapki urja healing wali hai. Aap doosron ka dard samajhte aur kam karte hain.'},
+ {n:'Neela',en:'Sky Blue',hi:'नीला',hex:'#4fb7ff',m:'Sachchi aur shaant vaani. Aapki baat logon par gehra asar karti hai.'},
+ {n:'Jamuni-Neela',en:'Indigo',hi:'जामुनी नीला',hex:'#7174ff',m:'Teesri aankh jaagrit hai. Aapka antarman (intuition) bahut strong hai.'},
+ {n:'Baingani',en:'Violet',hi:'बैंगनी',hex:'#b06cff',m:'Bhakti aur adhyatm ki urja. Aap par ishwar ki vishesh drishti hai.'},
+ {n:'Gulabi',en:'Rose Pink',hi:'गुलाबी',hex:'#ff6fae',m:'Prem aur karuna se bhari urja. Rishton mein mithaas laate hain.'},
+ {n:'Lal',en:'Ruby Red',hi:'लाल',hex:'#ff4f4f',m:'Josh aur shakti bharpoor hai. Bas gusse ko sahi disha dena zaroori hai.'},
+ {n:'Peela',en:'Sun Yellow',hi:'पीला',hex:'#ffe14d',m:'Buddhi aur khushi ki urja. Seekhne aur sikhane mein aap aage rehte hain.'},
+ {n:'Chaandi',en:'Silver White',hi:'चाँदी जैसा सफ़ेद',hex:'#dfe8ff',m:'Saatvik aur pavitra urja. Mann saaf hai, isliye nazar jaldi lagti hai.'}];
 const AURA_W=[12,11,11,10,9,9,10,9,10,9];
 const CHAKRAS=[
- {n:'Muladhara',en:'Root',hex:'#ff4f4f',b:'LAM',area:'Sthirta, paisa, suraksha',up:['Roz 10 minute nange pair ghaas ya mitti par chalein','"LAM" beej mantra 21 baar japein']},
- {n:'Swadhisthana',en:'Sacral',hex:'#ff8a2a',b:'VAM',area:'Creativity, rishte, aanand',up:['Behte paani ke paas samay bitaayein, paani zyada piyein','"VAM" beej mantra 21 baar japein']},
- {n:'Manipura',en:'Solar Plexus',hex:'#ffd23f',b:'RAM',area:'Aatmavishwas, ichha shakti',up:['Ugte Surya ko taambe ke lote se jal arpan karein','"RAM" beej mantra 21 baar japein']},
- {n:'Anahata',en:'Heart',hex:'#2fd38a',b:'YAM',area:'Prem, kshama, rishte',up:['Roz kisi ek insaan ki nishkaam madad karein','"YAM" beej mantra 21 baar japein']},
- {n:'Vishuddha',en:'Throat',hex:'#4fb7ff',b:'HAM',area:'Vaani, abhivyakti, sach',up:['Subah bhajan ya mantra zor se gaayein','"HAM" beej mantra 21 baar japein']},
- {n:'Ajna',en:'Third Eye',hex:'#7174ff',b:'OM',area:'Antarman, nirnay shakti',up:['Sone se pehle 5 minute bhrumadhya par dhyan karein','"OM" ka 11 baar uchcharan karein']},
- {n:'Sahasrara',en:'Crown',hex:'#c27dff',b:'OM',area:'Adhyatm, ishwar se judaav',up:['Roz 10 minute maun aur dhyan rakhein','"Hare Krishna" mahamantra ki 1 maala japein']}];
-const NAZAR=[{n:'Nahi',c:'#3ddc84'},{n:'Halka',c:'#ffc53d'},{n:'Madhyam',c:'#ff8f3d'},{n:'Teevra',c:'#ff5a5a'}];
+ {n:'Muladhara',en:'Root',hi:'मूलाधार',hex:'#ff4f4f',area:'Sthirta, paisa, suraksha',up:['Roz 10 minute nange pair ghaas ya mitti par chalein','"LAM" beej mantra 21 baar japein']},
+ {n:'Swadhisthana',en:'Sacral',hi:'स्वाधिष्ठान',hex:'#ff8a2a',area:'Creativity, rishte, aanand',up:['Behte paani ke paas samay bitaayein, paani zyada piyein','"VAM" beej mantra 21 baar japein']},
+ {n:'Manipura',en:'Solar Plexus',hi:'मणिपुर',hex:'#ffd23f',area:'Aatmavishwas, ichha shakti',up:['Ugte Surya ko taambe ke lote se jal arpan karein','"RAM" beej mantra 21 baar japein']},
+ {n:'Anahata',en:'Heart',hi:'अनाहत',hex:'#2fd38a',area:'Prem, kshama, rishte',up:['Roz kisi ek insaan ki nishkaam madad karein','"YAM" beej mantra 21 baar japein']},
+ {n:'Vishuddha',en:'Throat',hi:'विशुद्ध',hex:'#4fb7ff',area:'Vaani, abhivyakti, sach',up:['Subah bhajan ya mantra zor se gaayein','"HAM" beej mantra 21 baar japein']},
+ {n:'Ajna',en:'Third Eye',hi:'आज्ञा',hex:'#7174ff',area:'Antarman, nirnay shakti',up:['Sone se pehle 5 minute bhrumadhya par dhyan karein','"OM" ka 11 baar uchcharan karein']},
+ {n:'Sahasrara',en:'Crown',hi:'सहस्रार',hex:'#c27dff',area:'Adhyatm, ishwar se judaav',up:['Roz 10 minute maun aur dhyan rakhein','"Hare Krishna" mahamantra ki 1 maala japein']}];
+const NAZAR=[{n:'Nahi',hi:'',c:'#3ddc84'},{n:'Halka',hi:'हल्का',c:'#ffc53d'},{n:'Madhyam',hi:'मध्यम',c:'#ff8f3d'},{n:'Teevra',hi:'तीव्र',c:'#ff5a5a'}];
 const SIGNS=['Kaam bante-bante ruk jaana','Bina wajah thakaan aur aalas','Ghar mein chhoti baaton par kalesh','Neend ke baad bhi mann bhaari rehna','Paisa aate hi kharch ho jaana','Mann mein achanak bechaini','Nayi cheez jaldi kharab hona','Doosron ki baaton ka zyada asar hona'];
 const NAZAR_UP=['Shaam ko ghar mein kapoor jalaayein','Hafte mein 2 baar paani mein sendha namak daal kar snaan karein','Shanivaar ko mukhya dwaar par nimbu-mirchi lagaayein','Laal mirch, rai aur namak se 7 baar nazar utaar kar aag mein daalein','Mangalvaar aur Shanivaar Hanuman Chalisa ka paath karein'];
 const GRAH={1:['Surya','Purv (East)','Kesariya, Sunehri','Ravivaar'],2:['Chandra','Vayavya (North-West)','Safed, Chaandi','Somvaar'],3:['Guru','Ishaan (North-East)','Peela','Guruvaar'],4:['Rahu','Nairutya (South-West)','Neela, Grey','Shanivaar'],5:['Budh','Uttar (North)','Hara','Budhvaar'],6:['Shukra','Agneya (South-East)','Gulabi, Safed','Shukravaar'],7:['Ketu','Ishaan (North-East)','Halka Grey, Multicolor','Mangalvaar'],8:['Shani','Paschim (West)','Gehra Neela','Shanivaar'],9:['Mangal','Dakshin (South)','Laal','Mangalvaar']};
@@ -320,7 +343,6 @@ function reading(name,dob,gen){
  const sd=cyrb128('HKV-AURA|'+key),r=sfc32(...sd),ri=(a,b)=>a+Math.floor(r()*(b-a+1));
  const pickW=w=>{let s=w.reduce((a,b)=>a+b,0),x=r()*s;for(let i=0;i<w.length;i++){x-=w[i];if(x<0)return i}return 0};
  const pi=pickW(AURA_W);let si=pickW(AURA_W);if(si===pi)si=(pi+3)%AURAS.length;
- // chakras: one blocked + one weak guaranteed, nothing ever perfect
  const ch=CHAKRAS.map(()=>ri(62,93));
  const weak=ri(0,6);let weak2=ri(0,6);if(weak2===weak)weak2=(weak+2+ri(0,3))%7;
  ch[weak]=ri(29,48);ch[weak2]=ri(50,63);
@@ -344,7 +366,31 @@ function reading(name,dob,gen){
  const upay=[...NAZAR_UP.slice(0,[1,2,3,5][nl]),...CHAKRAS[low].up,CHAKRAS[low2].up[0],`Ghar ki ${g[1]} disha saaf, roshan aur kabaad se mukt rakhein. Yeh aapki shubh disha hai.`];
  const id='HKV-'+sd[0].toString(16).slice(0,4).toUpperCase()+'-'+(sd[1]%900+100);
  const freq=ri(402,568),spread=(1.3+energy/100*2.1).toFixed(1);
- return {name:name.trim(),dob,gen,id,aura:AURAS[pi],aura2:AURAS[si],ch,weak:low,nl,nz,energy,neg,pos:100-neg,shield,prana,shanti,karmic,signs,mulank,bhagyank,g,kami,upay,freq,spread};
+ return {name:name.trim(),dob,gen,id,aura:AURAS[pi],aura2:AURAS[si],ch,weak:low,nl,nz,energy,neg,pos:100-neg,shield,prana,shanti,karmic,signs,mulank,bhagyank,g,kami,upay,freq,spread,num:numerology(name,dob,gen)};
+}
+
+/* ================= CHEIRO / CHALDEAN NUMEROLOGY ================= */
+const CHALDEAN={A:1,I:1,J:1,Q:1,Y:1,B:2,K:2,R:2,C:3,G:3,L:3,S:3,D:4,M:4,T:4,E:5,H:5,N:5,X:5,U:6,V:6,W:6,O:7,Z:7,F:8,P:8};
+const SINGLE_M={1:'Netritva, aatmavishwas aur naam-shohrat ka ank.',2:'Bhavuk, kalpanasheel aur sahyog wala ank.',3:'Gyaan, anushasan aur unnati ka ank.',4:'Mehnati, alag soch aur achanak badlav ka ank.',5:'Vyapaar, buddhi aur tez safalta ka ank.',6:'Prem, sundarta aur sukh-suvidha ka ank.',7:'Adhyatm, gehri soch aur yatra ka ank.',8:'Sangharsh ke baad sthayi safalta ka ank.',9:'Saahas, shakti aur ladne ki kshamta ka ank.'};
+const CHEIRO={10:['Bhagya ka Chakra','Maan-samman aur aatmavishwas. Yojanaayein safal hoti hain.'],11:['Band Mutthi','Chhupe khatre aur dhokha. Saavdhani rakhein.'],12:['Tyaag','Doosron ki yojanaon ka shikaar banne ka bhay.'],13:['Badlav','Shakti aur parivartan. Laaparwaahi se nuksaan.'],14:['Gati','Vyapaar aur logon se laabh, lekin jokhim bhi.'],15:['Jaadu ka Ank','Aakarshan, dhan aur madad milti hai.'],16:['Toota Kila','Achanak rukaavat. Yojanaayein pehle se banayein.'],17:['Magi ka Sitara','Shaanti, prem aur amar naam ka ank.'],18:['Sangharsh','Bhautik aur adhyatmik khinchav. Dhokhe se bachein.'],19:['Surya Putra','Safalta, samman aur khushi ka shreshth ank.'],20:['Jaagran','Nayi shuruaat aur bade uddeshya ki pukaar.'],21:['Magi ka Mukut','Unnati, samman aur antim jeet.'],22:['Bhram','Aankhen band karke bharosa. Galat salah se bachein.'],23:['Simh ka Rajsi Sitara','Safalta aur bade logon ki madad.'],24:['Prem aur Sahyog','Prem aur unchi pehchaan se laabh.'],25:['Anubhav ki Shakti','Sangharsh se seekh kar safalta.'],26:['Saajhedaari ki Chetavani','Galat saajhedaari se nuksaan.'],27:['Raj-dand','Adhikaar, neta-gun aur rachnatmakta.'],28:['Virodhabhaas','Bharose se nuksaan. Kanooni maamlon mein saavdhani.'],29:['Anishchitta','Dhokha aur rishton mein pareshani.'],30:['Gehra Chintan','Buddhi aur maanasik shreshthta.'],31:['Akelaapan','Aatm-nirbharta, lekin duniya se doori.'],32:['Jaadui Shakti','Logon ka saath aur safalta. Apni raay par tike rahein.'],33:['Prem aur Sahyog','Prem aur pehchaan se laabh.'],34:['Anubhav ki Shakti','Sangharsh ke baad safalta.'],35:['Saajhedaari ki Chetavani','Saajhedaari mein saavdhani rakhein.'],36:['Raj-dand','Adhikaar aur sammaan.'],37:['Shubh Saajhedaari','Prem aur dosti se laabh.'],38:['Anishchitta','Bharose mein saavdhani rakhein.'],39:['Gehra Chintan','Buddhi aur gyaan.'],40:['Akelaapan','Aatm-nirbharta ka ank.'],41:['Jaadui Shakti','Logon ka saath aur safalta.'],42:['Prem aur Sahyog','Prem aur pehchaan.'],43:['Kranti','Ulat-pher aur rukaavatein. Dhairya rakhein.'],44:['Saajhedaari ki Chetavani','Saajhedaari mein saavdhani.'],45:['Raj-dand','Adhikaar aur sammaan.'],46:['Shubh Saajhedaari','Prem aur dosti.'],47:['Anishchitta','Bharose mein saavdhani.'],48:['Gehra Chintan','Buddhi aur gyaan.'],49:['Akelaapan','Aatm-nirbharta.'],50:['Jaadui Shakti','Safalta aur sahyog.'],51:['Yoddha','Achanak unnati aur shakti.'],52:['Kranti','Rukaavatein. Dhairya rakhein.']};
+const FRIENDS={1:[[1,2,3,5,9],[6,8]],2:[[1,2,3,5],[4,8,9]],3:[[1,2,3,5,7,9],[6]],4:[[1,5,6,7,8],[2,4,9]],5:[[1,2,3,5,6],[]],6:[[4,5,6,8,9],[1,3]],7:[[1,3,4,5,6],[2,8]],8:[[3,4,5,6,7],[1,2,8]],9:[[1,3,5,6,9],[2,4]]};
+const LOSHU_REM={1:'Ugte Surya ko jal, taambe ka kada pehnein',2:'Chaandi ke glass mein paani piyein, Somvaar Shiv ko jal',3:'Mathe par haldi ya kesar ka tilak, Guruvaar peela daan',4:'Ghar ke South-West mein bhaari cheez rakhein, Durga path',5:'Hara rumaal paas rakhein, Budhvaar gaay ko hara chara',6:'Safed vastra aur itra, Shukravaar Lakshmi pooja',7:'Ganesh pooja, Mangalvaar kambal daan',8:'Shanivaar sarson ke tel ka deepak jalaayein',9:'Mangalvaar Hanuman ji ko laal chola chadhaayein'};
+const KUA_DIR={1:['SE','E','S','N'],2:['NE','W','NW','SW'],3:['S','N','SE','E'],4:['N','S','E','SE'],6:['W','NE','SW','NW'],7:['NW','SW','NE','W'],8:['SW','NW','W','NE'],9:['E','SE','N','S']};
+const KUA_LBL=['Dhan (Sheng Chi)','Swasthya (Tien Yi)','Rishte (Nien Yen)','Shanti (Fu Wei)'];
+function numerology(name,dob,gen){
+ const letters=name.toUpperCase().replace(/[^A-Z]/g,'');const comp=[...letters].reduce((a,c)=>a+(CHALDEAN[c]||0),0)||1;
+ let c=comp;while(c>52)c-=9;const single=reduce(comp);
+ const cm=c>=10?CHEIRO[c]:null;
+ const y=+dob.slice(0,4),mo=+dob.slice(5,7),d=+dob.slice(8,10);
+ const mul=reduce(d),bhag=reduce(dob.replace(/\D/g,'').split('').reduce((a,b)=>a+ +b,0));
+ const [fr,en]=FRIENDS[mul];const compat=fr.includes(single)?['Shubh','#3ddc84','Naamank aapke mulank ka mitra hai.']:en.includes(single)?['Sudhaar chahiye','#ff5a5a','Naamank aapke mulank se mel nahi khaata. Naam ki spelling mein sudhaar se urja badh sakti hai.']:['Saamaanya','#ffc53d','Naamank aur mulank ka mel saamaanya hai. Halka sudhaar faydemand rahega.'];
+ const digits=dob.replace(/\D/g,'').split('').map(Number).filter(n=>n>0);digits.push(bhag);if(d>9)digits.push(mul);
+ const cnt={};for(let i=1;i<=9;i++)cnt[i]=0;digits.forEach(n=>cnt[n]++);
+ const missing=Object.keys(cnt).map(Number).filter(n=>!cnt[n]);
+ let ky=y;if(mo<2||(mo===2&&d<4))ky--;const r=reduce(String(ky).slice(2).split('').reduce((a,b)=>a+ +b,0));
+ let kua;if(gen==='f'){kua=reduce(ky<2000?5+r:6+r);if(kua===5)kua=8}else{kua=ky<2000?10-r:9-r;if(kua<=0)kua+=9;kua=reduce(kua);if(kua===5)kua=2}
+ const py=reduce(d+mo+2+0+2+6);
+ return {comp,single,cm,singleM:SINGLE_M[single],compat,cnt,missing,kua,kuaDirs:KUA_DIR[kua],py,mul,bhag};
 }
 
 /* ================= SCIENCE SECTION ================= */
@@ -352,156 +398,235 @@ const SCI=`<summary>Phone se aura scan kaise hota hai?</summary>
 <div class="sci-body">
  <p class="muted">Is scanner ke peeche ki technology aur physics, seedhe shabdon mein.</p>
  <div class="step"><span class="n">01</span><div><h3>ROSHNI HI DATA HAI</h3><p>Har cheez se roshni (photons) takra kar lautti hai. Phone ke camera mein CMOS sensor hota hai jisme laakhon chhote light-sensor (pixels) lage hote hain. Har pixel par padne wale photons <b>photoelectric effect</b> se electric signal ban jaate hain, aur har pixel Red, Green, Blue teen rang ki matra naapta hai. Ek second mein camera 30 se 60 aise frame leta hai.</p></div></div>
- <div class="step"><span class="n">02</span><div><h3>LIVE SPECTRAL ANALYSIS</h3><p>Scan ke dauraan app har frame ke pixels padhta hai aur screen par asli naap dikhata hai: <b>Luminance</b> (kitni roshni aap par hai), <b>Color temperature</b> (roshni garam hai ya thandi, Kelvin mein) aur <b>Spectral balance</b> (R, G, B ka anupaat). Yeh numbers aapke chehre aur aas-paas ki roshni se live badalte hain.</p></div></div>
- <div class="step"><span class="n">03</span><div><h3>SHAREER KI APNI ROSHNI</h3><p>Vigyan maanta hai ki jeevit shareer bhi roshni aur urja chhodta hai. Har cell bahut halki roshni deta hai jise <b>biophoton emission</b> kehte hain. Yeh aankh se 1000 guna kamzor hoti hai aur lab ke vishesh cameras se naapi gayi hai. Shareer ki garmi <b>infrared</b> rays chhodti hai jo thermal camera mein chamakti hai. <b>Kirlian photography</b> mein high-voltage field ungliyon ke chaaron taraf ek chamakta ghera dikhati hai, jise kai log aura ka pehla photo maante hain.</p></div></div>
- <div class="step"><span class="n">04</span><div><h3>PRITHVI KI DHADKAN</h3><p>Prithvi aur aakash ke beech electromagnetic field <b>7.83 Hz</b> par gunjti hai, jise Schumann Resonance kehte hain. Dhyan ki gehri avastha mein dimaag ki tarange bhi isi range ke aas-paas aati hain. Isliye scan ka base frequency 7.83 Hz rakha gaya hai.</p></div></div>
- <div class="step"><span class="n">05</span><div><h3>HKV ENERGY SIGNATURE</h3><p>Ank shastra ke anusaar naam aur janm tithi insaan ka energy code hai. HKV Aura Engine inhe ek unique signature mein badalta hai, aur wahi aapka aura rang, chakra santulan aur nazar ka star tay karta hai. Isi wajah se ek insaan ki reading har scan par same rehti hai aur har insaan ki alag aati hai. Camera us signature ko aapke roop par visualize karta hai.</p></div></div>
- <p class="honest">Saaf baat: phone ka camera biophotons ya infrared nahi dekh sakta. Live readings asli roshni naapti hain, aur aura reading HKV energy signature (naam aur janm tithi) se banti hai. Yeh scan spiritual margdarshan ke liye hai. Yeh medical ya lab jaanch nahi hai.</p>
+ <div class="step"><span class="n">02</span><div><h3>AI HUMAN DETECTION</h3><p>App ke andar ek <b>AI pose model</b> chalta hai jo har frame mein shareer ke 33 bindu (sir, aankhein, kandhe, kamar) pehchaanta hai. Isi se pata chalta hai ki frame mein asli insaan hai, aur saaton chakra aapke shareer ki sahi jagah par lagte hain. Insaan na ho toh scan shuru hi nahi hota.</p></div></div>
+ <div class="step"><span class="n">03</span><div><h3>LIVE SPECTRAL ANALYSIS</h3><p>Scan ke dauraan app har frame ke pixels padhta hai aur screen par asli naap dikhata hai: <b>Luminance</b> (kitni roshni aap par hai), <b>Color temperature</b> (roshni garam hai ya thandi, Kelvin mein) aur <b>Spectral balance</b> (R, G, B ka anupaat).</p></div></div>
+ <div class="step"><span class="n">04</span><div><h3>SHAREER KI APNI ROSHNI</h3><p>Jeevit shareer bhi roshni aur urja chhodta hai. Har cell bahut halki roshni deta hai jise <b>biophoton emission</b> kehte hain, jo lab ke vishesh cameras se naapi gayi hai. Shareer ki garmi <b>infrared</b> rays chhodti hai jo thermal camera mein chamakti hai. <b>Kirlian photography</b> mein high-voltage field ungliyon ke chaaron taraf chamakta ghera dikhati hai.</p></div></div>
+ <div class="step"><span class="n">05</span><div><h3>PRITHVI KI DHADKAN</h3><p>Prithvi aur aakash ke beech electromagnetic field <b>7.83 Hz</b> par gunjti hai, jise Schumann Resonance kehte hain. Isliye scan ka base frequency 7.83 Hz rakha gaya hai.</p></div></div>
+ <div class="step"><span class="n">06</span><div><h3>HKV ENERGY SIGNATURE</h3><p>Ank shastra ke anusaar naam aur janm tithi insaan ka energy code hai. HKV Aura Engine inhe ek unique signature mein badalta hai, aur wahi aura rang, chakra santulan aur nazar ka star tay karta hai. Camera us signature ko aapke shareer par visualize karta hai.</p></div></div>
+ <p class="honest">Saaf baat: phone ka camera biophotons ya infrared nahi dekh sakta. Live readings asli roshni aur shareer ki position naapti hain, aur aura reading HKV energy signature (naam aur janm tithi) se banti hai. Yeh scan spiritual margdarshan ke liye hai. Yeh medical ya lab jaanch nahi hai.</p>
 </div>`;
 $('#sci1').innerHTML=SCI;$('#sci2').innerHTML=SCI;
 
-/* ================= NAV ================= */
-function show(id){['splash','form','result'].forEach(s=>$('#'+s).hidden=s!==id);window.scrollTo(0,0);splashOn=id==='splash';if(splashOn)requestAnimationFrame(function l(n){if(splashOn){drawMandala(mand,n/1000,true);requestAnimationFrame(l)}})}
-$('#startBtn').addEventListener('click',()=>{Snd.init();if(Snd.ac&&Snd.ac.state==='suspended')Snd.ac.resume();Snd.startDrone();Snd.bell(528,.3);show('form');renderHist()});
+/* ================= NAV + PHONE BACK BUTTON ================= */
+let screen='splash',resRaf=0;
+function show(id,push=true){['splash','form','result'].forEach(s=>$('#'+s).hidden=s!==id);window.scrollTo(0,0);screen=id;
+ const was=splashOn;splashOn=id==='splash';if(splashOn&&!was)requestAnimationFrame(splashLoop);
+ if(id!=='result'){cancelAnimationFrame(resRaf);try{window.speechSynthesis&&speechSynthesis.cancel()}catch(e){}}
+ if(push)try{history.pushState({s:id},'')}catch(e){}}
+try{history.replaceState({s:'splash'},'')}catch(e){}
+addEventListener('popstate',e=>{
+ if(!$('#modal').hidden){$('#modal').hidden=true;try{history.pushState({s:screen},'')}catch(_){}return}
+ if(!stage.hidden){closeStage();return}
+ const s=e.state&&e.state.s||'splash';show(s,false);if(s==='form')renderHist()});
+$$('[data-back]').forEach(b=>b.addEventListener('click',()=>history.back()));
+$('#startBtn').addEventListener('click',()=>{Snd.init();Snd.startDrone();Snd.bell(528,.3);show('form');renderHist();loadDetector()});
 
-let cur=null; // current person
+let cur=null;
 $('#pform').addEventListener('submit',e=>{e.preventDefault();Snd.init();
  const name=$('#pname').value.trim(),dob=$('#pdob').value,gen=$('#pgen').value,err=$('#ferr');
- if(name.length<2){err.textContent='Poora naam likhein (kam se kam 2 akshar).';err.hidden=false;return}
+ if(name.replace(/[^A-Za-z]/g,'').length<2){err.textContent='Poora naam English akshar mein likhein (kam se kam 2 akshar).';err.hidden=false;return}
  if(!/^\d{4}-\d{2}-\d{2}$/.test(dob)){err.textContent='Janm tithi chunein.';err.hidden=false;return}
  err.hidden=true;cur={name,dob,gen};openStage()});
 
-/* ================= HISTORY ================= */
-function renderHist(){const h=store.get('hkv_aura_hist',[]);$('#histCard').hidden=!h.length;$('#hist').innerHTML='';
- h.forEach((it,i)=>{const R=reading(it.name,it.dob,it.gen);const b=document.createElement('button');b.type='button';b.className='hrow';
-  b.innerHTML=`${it.thumb?`<img alt="" src="${it.thumb}">`:''}<span class="dot" style="color:${R.aura.hex};background:${R.aura.hex}"></span><div><b></b><small>${esc(R.aura.n)} aura · Score ${R.energy} · ${new Date(it.ts).toLocaleDateString('en-IN')}</small></div>`;
-  b.querySelector('b').textContent=it.name;b.addEventListener('click',()=>{cur={name:it.name,dob:it.dob,gen:it.gen};loadThumb(it.thumb).then(c=>{finishResult(c,false)})});$('#hist').appendChild(b)})}
-function saveHist(base){let thumb='';try{const t=document.createElement('canvas');t.width=120;t.height=160;t.getContext('2d').drawImage(base,0,0,120,160);thumb=t.toDataURL('image/jpeg',.7)}catch(e){}
- let h=store.get('hkv_aura_hist',[]).filter(x=>!(x.name.toLowerCase()===cur.name.toLowerCase()&&x.dob===cur.dob));h.unshift({...cur,ts:Date.now(),thumb});store.set('hkv_aura_hist',h.slice(0,10))}
-function loadThumb(src){return new Promise(res=>{const c=document.createElement('canvas');c.width=720;c.height=960;if(!src){res(silhouette(720,960));return}const im=new Image();im.onload=()=>{c.getContext('2d').drawImage(im,0,0,720,960);res(c)};im.onerror=()=>res(silhouette(720,960));im.src=src})}
+/* ================= HISTORY (with delete) ================= */
+const HK='hkv_aura_hist';
+function renderHist(){const h=store.get(HK,[]);$('#histCard').hidden=!h.length;$('#hist').innerHTML='';$('#delConfirm').hidden=true;
+ h.forEach((it,i)=>{const P=reading(it.name,it.dob,it.gen);const wrap=document.createElement('div');wrap.className='hitem';
+  const b=document.createElement('button');b.type='button';b.className='hrow';
+  b.innerHTML=`${it.thumb?`<img alt="" src="${it.thumb}">`:''}<span class="dot" style="color:${P.aura.hex};background:${P.aura.hex}"></span><div><b></b><small>${esc(P.aura.n)} aura · Score ${P.energy} · ${new Date(it.ts).toLocaleDateString('en-IN')}</small></div>`;
+  b.querySelector('b').textContent=it.name;
+  b.addEventListener('click',()=>{cur={name:it.name,dob:it.dob,gen:it.gen};loadThumb(it.thumb).then(c=>finishResult(c,false,it.pts||null,null))});
+  const del=document.createElement('button');del.type='button';del.className='hdel';del.setAttribute('aria-label','Delete '+it.name);del.textContent='✕';
+  del.addEventListener('click',()=>{const a=store.get(HK,[]);a.splice(i,1);store.set(HK,a);renderHist();toast('Scan delete ho gaya')});
+  wrap.append(b,del);$('#hist').appendChild(wrap)})}
+$('#delAll').addEventListener('click',()=>{$('#delConfirm').hidden=false});
+$('#delNo').addEventListener('click',()=>{$('#delConfirm').hidden=true});
+$('#delYes').addEventListener('click',()=>{store.set(HK,[]);renderHist();toast('Saare scans delete ho gaye')});
+function saveHist(base,pts){let thumb='';try{const t=document.createElement('canvas');t.width=150;t.height=200;t.getContext('2d').drawImage(base,0,0,150,200);thumb=t.toDataURL('image/jpeg',.72)}catch(e){}
+ const h=store.get(HK,[]).filter(x=>!(x.name.toLowerCase()===cur.name.toLowerCase()&&x.dob===cur.dob));h.unshift({...cur,ts:Date.now(),thumb,pts:pts?pts.map(p=>[+p[0].toFixed(4),+p[1].toFixed(4)]):null});store.set(HK,h.slice(0,12))}
+function loadThumb(s){return new Promise(res=>{const c=document.createElement('canvas');c.width=720;c.height=960;if(!s){res(silhouette(720,960));return}const im=new Image();im.onload=()=>{c.getContext('2d').drawImage(im,0,0,720,960);res(c)};im.onerror=()=>res(silhouette(720,960));im.src=s})}
 
-/* ================= SILHOUETTE (no-camera source) ================= */
+/* ================= SILHOUETTE ================= */
 function silhouette(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');
  const bg=x.createRadialGradient(w/2,h*.4,10,w/2,h*.45,h*.8);bg.addColorStop(0,'#1b1440');bg.addColorStop(1,'#05040b');x.fillStyle=bg;x.fillRect(0,0,w,h);
  x.fillStyle='#0b0918';x.strokeStyle='rgba(88,240,226,.55)';x.lineWidth=w/180;x.shadowColor='rgba(88,240,226,.8)';x.shadowBlur=w/30;
  x.beginPath();x.ellipse(w/2,h*.3,w*.13,h*.12,0,0,7);x.fill();x.stroke();
  x.beginPath();x.moveTo(w*.44,h*.41);x.lineTo(w*.56,h*.41);x.bezierCurveTo(w*.6,h*.46,w*.82,h*.47,w*.88,h*.58);x.lineTo(w*.95,h);x.lineTo(w*.05,h);x.lineTo(w*.12,h*.58);x.bezierCurveTo(w*.18,h*.47,w*.4,h*.46,w*.44,h*.41);x.closePath();x.fill();x.stroke();return c}
 
-/* ================= AURA RENDER ================= */
-function drawAura(x,w,h,R,t,k){if(k<=0)return;x.save();x.globalCompositeOperation='screen';const cx=w/2,cy=h*.45,m=Math.min(w,h);
- for(let i=0;i<16;i++){const a=i/16*Math.PI*2+Math.sin(t*.5+i)*.25;const px=cx+Math.cos(a)*w*(.42+.05*Math.sin(t*.8+i*2.1)),py=cy+Math.sin(a)*h*(.42+.04*Math.cos(t*.7+i));
-  const rad=m*(.3+.08*Math.sin(t*1.1+i*1.7));const col=(i%3===0?R.aura2:R.aura).hex;const g=x.createRadialGradient(px,py,0,px,py,rad);g.addColorStop(0,rgba(col,.55*k));g.addColorStop(1,rgba(col,0));x.fillStyle=g;x.fillRect(px-rad,py-rad,rad*2,rad*2)}
- const hy=h*.12,hr=m*(.42+.04*Math.sin(t*1.3));const hg=x.createRadialGradient(cx,hy,0,cx,hy,hr);hg.addColorStop(0,rgba(R.aura.hex,.5*k));hg.addColorStop(1,rgba(R.aura.hex,0));x.fillStyle=hg;x.fillRect(cx-hr,hy-hr,hr*2,hr*2);
- x.globalCompositeOperation='lighter';x.strokeStyle=rgba(R.aura.hex,.35*k);x.lineWidth=m/90;x.shadowColor=R.aura.hex;x.shadowBlur=m/20;x.beginPath();
- for(let i=0;i<=80;i++){const a=i/80*Math.PI*2,j=1+.04*Math.sin(a*7+t*2)+.03*Math.sin(a*13-t*3);x.lineTo(cx+Math.cos(a)*w*.36*j,cy+Math.sin(a)*h*.44*j)}x.stroke();x.restore()}
+/* ================= AI HUMAN DETECTION (MediaPipe Pose) ================= */
+const det={state:'idle',lm:null,seen:0,conf:0,pl:null};
+async function loadDetector(){if(det.state!=='idle')return;det.state='loading';
+ try{const V='0.10.14';const mp=await import(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${V}/vision_bundle.mjs`);
+  const fs=await mp.FilesetResolver.forVisionTasks(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${V}/wasm`);
+  const opts=d=>({baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',delegate:d},runningMode:'VIDEO',numPoses:1,minPoseDetectionConfidence:.5,minPosePresenceConfidence:.5});
+  try{det.pl=await mp.PoseLandmarker.createFromOptions(fs,opts('GPU'))}catch(e){det.pl=await mp.PoseLandmarker.createFromOptions(fs,opts('CPU'))}
+  det.state='ready'}catch(e){det.state='failed'}}
+let lastDetT=0,lastVT=-1;
+function runDetect(now){if(det.state!=='ready'||!src)return;
+ try{if(src===vid){if(vid.readyState<2||vid.currentTime===lastVT)return;lastVT=vid.currentTime}else if(now-lastDetT<150)return;
+  const ts=Math.max(now,lastDetT+1);lastDetT=ts;const r=det.pl.detectForVideo(src,ts);const lm=r&&r.landmarks&&r.landmarks[0];
+  if(lm){const v=[0,11,12].map(i=>lm[i].visibility??1);const conf=v.reduce((a,b)=>a+b,0)/3;if(conf>.5){det.lm=lm;det.seen=now;det.conf=conf;return}}
+  if(now-det.seen>600){det.lm=null;det.conf=0}}catch(e){}}
+const present=now=>!!det.lm&&now-det.seen<700;
+
+/* ================= GEOMETRY ================= */
+let src=null,mirror=false;
+const vid=$('#vid');
+function srcDims(){if(!src)return[1,1];return src===vid?[vid.videoWidth||1,vid.videoHeight||1]:[src.width,src.height]}
+function mapPt(px,py,w,h){const[sw,sh]=srcDims();const s=Math.max(w/sw,h/sh),dx=(w-sw*s)/2,dy=(h-sh*s)/2;return{x:dx+(mirror?sw-px:px)*s,y:dy+py*s}}
 const CK_Y=[.92,.81,.69,.57,.45,.32,.17];
-function drawChakraDot(x,w,h,i,k,t,big){const y=h*CK_Y[i],cx=w/2,c=CHAKRAS[i].hex,m=Math.min(w,h),r=m*(big?.05:.025)*(1+.15*Math.sin(t*4+i));x.save();x.globalCompositeOperation='lighter';const g=x.createRadialGradient(cx,y,0,cx,y,r*2.2);g.addColorStop(0,rgba(c,.95*k));g.addColorStop(.4,rgba(c,.4*k));g.addColorStop(1,rgba(c,0));x.fillStyle=g;x.beginPath();x.arc(cx,y,r*2.2,0,7);x.fill();x.restore()}
+let srcPts=null; // smoothed chakra points in source pixels, 0 root .. 6 crown
+function updateSrcPts(){if(!det.lm)return;const[sw,sh]=srcDims(),L=i=>({x:det.lm[i].x*sw,y:det.lm[i].y*sh,v:det.lm[i].visibility??1});
+ const avg=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2}),add=(a,v,k)=>({x:a.x+v.x*k,y:a.y+v.y*k}),sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y});
+ const eye=avg(L(2),L(5)),nose=L(0),mouth=avg(L(9),L(10)),l11=L(11),l12=L(12),shm=avg(l11,l12),sw_=Math.hypot(l11.x-l12.x,l11.y-l12.y);
+ const h1=L(23),h2=L(24);const T=Math.min(h1.v,h2.v)>.5?sub(avg(h1,h2),shm):{x:0,y:sw_*1.35};
+ const p=[add(shm,T,1),add(shm,T,.78),add(shm,T,.5),add(shm,T,.16),{x:lerp(mouth.x,shm.x,.6),y:lerp(mouth.y,shm.y,.6)},add(eye,sub(eye,nose),.55),add(eye,sub(eye,mouth),1.55)];
+ if(!srcPts){srcPts=p;srcPts.sw=sw_}else{p.forEach((q,i)=>{srcPts[i].x=lerp(srcPts[i].x,q.x,.35);srcPts[i].y=lerp(srcPts[i].y,q.y,.35)});srcPts.sw=lerp(srcPts.sw,sw_,.35)}}
+function ptsFor(w,h){if(!srcPts)return CK_Y.map(f=>({x:w/2,y:h*f}));
+ const p=srcPts.map(q=>mapPt(q.x,q.y,w,h));const lim=h*.94;
+ if(p[0].y>lim){const hy=p[3].y,sc=(lim-hy)/Math.max(1,p[0].y-hy);for(let i=0;i<3;i++){p[i].y=hy+(p[i].y-hy)*sc;p[i].x=p[3].x+(p[i].x-p[3].x)*sc}}
+ if(p[6].y<h*.05)p[6].y=h*.05;return p}
+function ctrFor(p,w,h){const[sw,sh]=srcDims();const s=Math.max(w/sw,h/sh);const shW=srcPts?srcPts.sw*s:w*.4;
+ return{x:p[3].x,y:(p[6].y+p[0].y)/2,rx:Math.max(shW*1.05,w*.3),ry:Math.max((p[0].y-p[6].y)*.62,h*.3),hx:p[6].x,hy:p[6].y}}
+
+/* ================= AURA RENDER ================= */
+function drawAura(x,w,h,P,t,k,c){if(k<=0)return;c=c||{x:w/2,y:h*.48,rx:w*.42,ry:h*.42,hx:w/2,hy:h*.12};x.save();x.globalCompositeOperation='screen';const m=Math.min(w,h);
+ for(let i=0;i<16;i++){const a=i/16*Math.PI*2+Math.sin(t*.5+i)*.25;const px=c.x+Math.cos(a)*c.rx*(1+.12*Math.sin(t*.8+i*2.1)),py=c.y+Math.sin(a)*c.ry*(1+.1*Math.cos(t*.7+i));
+  const rad=m*(.28+.08*Math.sin(t*1.1+i*1.7));const col=(i%3===0?P.aura2:P.aura).hex;const g=x.createRadialGradient(px,py,0,px,py,rad);g.addColorStop(0,rgba(col,.55*k));g.addColorStop(1,rgba(col,0));x.fillStyle=g;x.fillRect(px-rad,py-rad,rad*2,rad*2)}
+ const hr=m*(.36+.04*Math.sin(t*1.3));const hg=x.createRadialGradient(c.hx,c.hy,0,c.hx,c.hy,hr);hg.addColorStop(0,rgba(P.aura.hex,.55*k));hg.addColorStop(1,rgba(P.aura.hex,0));x.fillStyle=hg;x.fillRect(c.hx-hr,c.hy-hr,hr*2,hr*2);
+ x.globalCompositeOperation='lighter';x.strokeStyle=rgba(P.aura.hex,.35*k);x.lineWidth=m/90;x.shadowColor=P.aura.hex;x.shadowBlur=m/20;x.beginPath();
+ for(let i=0;i<=80;i++){const a=i/80*Math.PI*2,j=1+.04*Math.sin(a*7+t*2)+.03*Math.sin(a*13-t*3);x.lineTo(c.x+Math.cos(a)*c.rx*.88*j,c.y+Math.sin(a)*c.ry*1.02*j)}x.stroke();x.restore()}
+function drawChakraDot(x,px,py,hex,k,t,size){const r=size*(1+.15*Math.sin(t*4+px));x.save();x.globalCompositeOperation='lighter';const g=x.createRadialGradient(px,py,0,px,py,r*2.2);g.addColorStop(0,rgba(hex,.95*k));g.addColorStop(.4,rgba(hex,.4*k));g.addColorStop(1,rgba(hex,0));x.fillStyle=g;x.beginPath();x.arc(px,py,r*2.2,0,7);x.fill();x.restore()}
 
 /* ================= SCAN STAGE ================= */
-const stage=$('#stage'),cv=$('#scv'),cx2=cv.getContext('2d'),vid=$('#vid');
-let src=null,mirror=false,stream=null,phase='idle',t0=0,R=null,parts=[],ignited=[],raf=0,wake=null,liveStats={L:0,K:0,r:0,g:0,b:0},statT=0,flashes=[];
+const stage=$('#stage'),cv=$('#scv'),cx2=cv.getContext('2d');
+let stream=null,phase='idle',t0=0,R=null,parts=[],ignited=[],raf=0,wake=null,liveStats={L:0,K:0,r:0,g:0,b:0},statT=0,flags={},shot=null,presentSince=0;
 const sample=document.createElement('canvas');sample.width=48;sample.height=64;const sx=sample.getContext('2d',{willReadFrequently:true});
 function size(){const d=Math.min(2,devicePixelRatio||1);cv.width=innerWidth*d;cv.height=innerHeight*d}
 addEventListener('resize',()=>{if(!stage.hidden)size()});
-function srcDims(){if(!src)return[1,1];return src===vid?[vid.videoWidth||1,vid.videoHeight||1]:[src.width,src.height]}
 function drawSrc(x,w,h){if(!src)return;const[sw,sh]=srcDims();const s=Math.max(w/sw,h/sh),dw=sw*s,dh=sh*s;x.save();if(mirror){x.translate(w,0);x.scale(-1,1)}x.drawImage(src,(w-dw)/2,(h-dh)/2,dw,dh);x.restore()}
-function measure(){ // real pixel analysis of the live frame
- try{drawSrc(sx,48,64);const d=sx.getImageData(0,0,48,64).data;let r=0,g=0,b=0,n=d.length/4;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2]}r/=n;g/=n;b/=n;
+function measure(){try{drawSrc(sx,48,64);const d=sx.getImageData(0,0,48,64).data;let r=0,g=0,b=0,n=d.length/4;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2]}r/=n;g/=n;b/=n;
   const L=(.2126*r+.7152*g+.0722*b)/255*100;const rb=(r+1)/(b+1);const K=Math.round(clamp(6500/Math.pow(rb,.9),1800,12000)/10)*10;const sum=r+g+b+1;liveStats={L,K,r:r/sum*100,g:g/sum*100,b:b/sum*100}}catch(e){}}
 
-async function openStage(){stage.hidden=false;size();phase='idle';$('#fallback').hidden=true;$('#scanBtn').hidden=true;$('#stProg').style.width='0';$('#stStatus').textContent='Camera shuru ho raha hai…';src=null;cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);
+function openStage(){stage.hidden=false;try{history.pushState({s:screen,stage:1},'')}catch(e){}size();phase='idle';srcPts=null;det.lm=null;$('#fallback').hidden=true;$('#scanBtn').hidden=true;$('#stProg').style.width='0';$('#stStatus').textContent='Camera shuru ho raha hai…';src=null;cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);loadDetector();startCam()}
+async function startCam(){$('#fallback').hidden=true;
  try{if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('none');
   stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:960}},audio:false});
+  if(stage.hidden){stopCam();return}
   vid.srcObject=stream;await vid.play();src=vid;mirror=true;ready()}
- catch(e){$('#fallback').hidden=false;$('#stStatus').textContent=''}}
-function ready(){$('#fallback').hidden=true;phase='preview';$('#scanBtn').hidden=false;$('#stStatus').textContent='Chehra aur kandhe gol ghere mein laayein';Snd.beep(660,.15,.12)}
-function useImage(file){const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');const s=Math.min(1,960/Math.max(im.width,im.height));c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);src=c;mirror=false;ready()};im.src=fr.result};fr.readAsDataURL(file)}
+ catch(e){if(!stage.hidden){$('#fallback').hidden=false;$('#stStatus').textContent=''}}}
+$('#retryCam').addEventListener('click',startCam);
+function ready(){$('#fallback').hidden=true;phase='preview';presentSince=0;$('#scanBtn').hidden=false;$('#scanBtn').disabled=true;$('#stStatus').textContent='Insaan dhoondh rahe hain…';Snd.beep(660,.15,.12)}
+function useImage(file){const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');const s=Math.min(1,960/Math.max(im.width,im.height));c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);src=c;mirror=false;srcPts=null;det.lm=null;ready()};im.src=fr.result};fr.readAsDataURL(file)}
 $('#capIn').addEventListener('change',e=>{if(e.target.files[0])useImage(e.target.files[0]);e.target.value=''});
 $('#galIn').addEventListener('change',e=>{if(e.target.files[0])useImage(e.target.files[0]);e.target.value=''});
-$('#noPhoto').addEventListener('click',()=>{src=silhouette(720,960);mirror=false;ready()});
 function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}vid.srcObject=null;if(wake){wake.release().catch(()=>{});wake=null}}
-$('#stClose').addEventListener('click',()=>{cancelAnimationFrame(raf);stopCam();stage.hidden=true;phase='idle';Snd.droneLevel(.16)});
+function closeStage(){cancelAnimationFrame(raf);stopCam();stage.hidden=true;phase='idle';Snd.droneLevel(.16)}
+$('#stClose').addEventListener('click',()=>history.back());
 
-$('#scanBtn').addEventListener('click',async()=>{if(phase!=='preview')return;Snd.init();if(Snd.ac&&Snd.ac.state==='suspended')Snd.ac.resume();Snd.startDrone();
- R=reading(cur.name,cur.dob,cur.gen);phase='scan';t0=performance.now();parts=[];ignited=CHAKRAS.map(()=>-1);flashes=[];$('#scanBtn').hidden=true;
+$('#scanBtn').addEventListener('click',async()=>{if(phase!=='preview'||$('#scanBtn').disabled)return;Snd.init();Snd.startDrone();
+ R=reading(cur.name,cur.dob,cur.gen);phase='scan';t0=performance.now();parts=[];ignited=CHAKRAS.map(()=>-1);flags={};shot=null;$('#scanBtn').hidden=true;
  try{wake=await navigator.wakeLock?.request('screen')}catch(e){}
- Snd.droneLevel(.26);Snd.whoosh(1.4,.3);Snd.sweep(80,600,1.4,.08)});
+ vib(40);Snd.droneLevel(.26);Snd.whoosh(1.4,.3);Snd.sweep(80,600,1.4,.08)});
 
 const T=13.2;
 const STEPS=[[0,'Bio-field se sampark ho raha hai…'],[1.3,'7.83 Hz base frequency lock'],...CHAKRAS.map((c,i)=>[1.6+i*1.1,`${c.n} chakra padha ja raha hai…`]),[9.4,'Aura vistar maapa ja raha hai…'],[10.4,'Nazar dosh layer check ho rahi hai…'],[11.6,'Energy signature match ho raha hai…'],[12.4,'Report taiyaar…']];
+const BONES=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24]];
 function tick(now){raf=requestAnimationFrame(tick);const w=cv.width,h=cv.height,x=cx2,m=Math.min(w,h),f=w/400;
  x.globalCompositeOperation='source-over';x.fillStyle='#000';x.fillRect(0,0,w,h);
  if(!src)return;drawSrc(x,w,h);
+ runDetect(now);updateSrcPts();
  if(now-statT>120){measure();statT=now}
- const tt=phase==='scan'?(now-t0)/1000:0, ts=now/1000, cx=w/2, hy=h*.33;
- // cinematic grade
+ const tt=phase==='scan'?(now-t0)/1000:0,ts=now/1000,isP=present(now);
+ const P=ptsFor(w,h),C=ctrFor(P,w,h);
  x.fillStyle=phase==='scan'?'rgba(10,4,30,.38)':'rgba(10,4,30,.25)';x.fillRect(0,0,w,h);
- // grid
  x.save();x.strokeStyle='rgba(88,240,226,.07)';x.lineWidth=1;const gs=40*f;for(let gx=(w/2)%gs;gx<w;gx+=gs){x.beginPath();x.moveTo(gx,0);x.lineTo(gx,h);x.stroke()}for(let gy=0;gy<h;gy+=gs){x.beginPath();x.moveTo(0,gy);x.lineTo(w,gy);x.stroke()}x.restore();
- // corner brackets
- x.save();x.strokeStyle='rgba(245,191,79,.8)';x.lineWidth=2*f;const bm=24*f,bl=34*f,top=80*f,bot=h-170*f;[[bm,top,1,1],[w-bm,top,-1,1],[bm,bot,1,-1],[w-bm,bot,-1,-1]].forEach(([a,b,sx_,sy_])=>{x.beginPath();x.moveTo(a,b+bl*sy_);x.lineTo(a,b);x.lineTo(a+bl*sx_,b);x.stroke()});x.restore();
- // head rings
- const ringR=m*.27;x.save();x.translate(cx,hy);x.lineWidth=2*f;
- [[1,'rgba(88,240,226,.75)',.35,[16*f,10*f]],[1.12,'rgba(245,191,79,.6)',-.22,[4*f,14*f]],[1.24,'rgba(88,240,226,.3)',.12,[60*f,30*f]]].forEach(([s,c,sp,d])=>{x.save();x.rotate(ts*sp*(phase==='scan'?3:1));x.strokeStyle=c;x.setLineDash(d);x.beginPath();x.ellipse(0,0,ringR*s*.85,ringR*s*1.05,0,0,7);x.stroke();x.restore()});
- x.setLineDash([]);x.strokeStyle='rgba(245,191,79,.9)';for(let i=0;i<16;i++){const a=i*Math.PI/8+ts*.2;x.beginPath();x.moveTo(Math.cos(a)*ringR*1.3,Math.sin(a)*ringR*1.3*1.2);x.lineTo(Math.cos(a)*ringR*1.38,Math.sin(a)*ringR*1.38*1.2);x.stroke()}x.restore();
- // HUD readouts (real measured light values)
+ x.save();x.strokeStyle='rgba(245,191,79,.8)';x.lineWidth=2*f;const bm=24*f,bl=34*f,top=80*f,bot=h-170*f;[[bm,top,1,1],[w-bm,top,-1,1],[bm,bot,1,-1],[w-bm,bot,-1,-1]].forEach(([a,b,p,q])=>{x.beginPath();x.moveTo(a,b+bl*q);x.lineTo(a,b);x.lineTo(a+bl*p,b);x.stroke()});x.restore();
+ // AI body box + skeleton
+ if(isP){const[sw,sh]=srcDims();const vis=det.lm.slice(0,25).filter(q=>(q.visibility??1)>.5).map(q=>mapPt(q.x*sw,q.y*sh,w,h));
+  if(vis.length){let x1=Math.min(...vis.map(q=>q.x))-20*f,x2=Math.max(...vis.map(q=>q.x))+20*f,y1=Math.min(...vis.map(q=>q.y))-m*.12,y2=Math.max(...vis.map(q=>q.y))+20*f;x1=clamp(x1,8,w-8);x2=clamp(x2,8,w-8);y1=clamp(y1,top+30*f,h-8);y2=clamp(y2,8,bot);
+   x.save();x.strokeStyle='rgba(61,220,132,.9)';x.lineWidth=2*f;const cl=18*f;[[x1,y1,1,1],[x2,y1,-1,1],[x1,y2,1,-1],[x2,y2,-1,-1]].forEach(([a,b,p,q])=>{x.beginPath();x.moveTo(a,b+cl*q);x.lineTo(a,b);x.lineTo(a+cl*p,b);x.stroke()});
+   x.font=`600 ${11*f}px "IBM Plex Mono",monospace`;x.fillStyle='rgba(61,220,132,.95)';x.fillText(`HUMAN · ${Math.round(det.conf*100)}%`,x1+4*f,y1-6*f);
+   x.strokeStyle='rgba(88,240,226,.35)';x.lineWidth=1.5*f;BONES.forEach(([a,b])=>{const A=det.lm[a],B=det.lm[b];if((A.visibility??1)<.5||(B.visibility??1)<.5)return;const p1=mapPt(A.x*sw,A.y*sh,w,h),p2=mapPt(B.x*sw,B.y*sh,w,h);x.beginPath();x.moveTo(p1.x,p1.y);x.lineTo(p2.x,p2.y);x.stroke()});x.restore()}}
+ // head rings follow the third eye
+ const ringR=m*.2;x.save();x.translate(P[5].x,P[5].y);x.lineWidth=2*f;
+ [[1,'rgba(88,240,226,.75)',.35,[16*f,10*f]],[1.15,'rgba(245,191,79,.6)',-.22,[4*f,14*f]],[1.3,'rgba(88,240,226,.3)',.12,[60*f,30*f]]].forEach(([s,c,sp,d])=>{x.save();x.rotate(ts*sp*(phase==='scan'?3:1));x.strokeStyle=c;x.setLineDash(d);x.beginPath();x.ellipse(0,0,ringR*s*.85,ringR*s*1.05,0,0,7);x.stroke();x.restore()});
+ x.setLineDash([]);x.strokeStyle='rgba(245,191,79,.9)';for(let i=0;i<16;i++){const a=i*Math.PI/8+ts*.2;x.beginPath();x.moveTo(Math.cos(a)*ringR*1.4,Math.sin(a)*ringR*1.4*1.2);x.lineTo(Math.cos(a)*ringR*1.48,Math.sin(a)*ringR*1.48*1.2);x.stroke()}x.restore();
+ // HUD readouts (real values)
  x.save();x.font=`${11*f}px "IBM Plex Mono",monospace`;x.fillStyle='rgba(88,240,226,.9)';x.shadowColor='rgba(88,240,226,.8)';x.shadowBlur=6*f;
  const lx=bm+4*f,ly=top+bl+20*f,lh=16*f;
- const L=[`BIO-FIELD  7.83 Hz`,`LUMINANCE  ${liveStats.L.toFixed(1)}%`,`COLOR TEMP ${liveStats.K} K`,`SPECTRUM   R${liveStats.r.toFixed(0)} G${liveStats.g.toFixed(0)} B${liveStats.b.toFixed(0)}`,`FRAME      ${(ts*30|0)%100000}`];L.forEach((s,i)=>x.fillText(s,lx,ly+i*lh));
+ const aiTxt=det.state==='ready'?(isP?`LOCK ${Math.round(det.conf*100)}%`:'SEARCHING'):det.state==='loading'?'LOADING':'OFF';
+ [`BIO-FIELD  7.83 Hz`,`LUMINANCE  ${liveStats.L.toFixed(1)}%`,`COLOR TEMP ${liveStats.K} K`,`SPECTRUM   R${liveStats.r.toFixed(0)} G${liveStats.g.toFixed(0)} B${liveStats.b.toFixed(0)}`,`AI BODY    ${aiTxt}`].forEach((s,i)=>x.fillText(s,lx,ly+i*lh));
  x.textAlign='right';x.fillStyle='rgba(245,191,79,.95)';x.shadowColor='rgba(245,191,79,.8)';
  const scanPct=phase==='scan'?clamp(tt/T*100,0,100):0;
- const Rr=[`HKV ENGINE v5.1`,`ZONES 16/16`,`SCAN ${scanPct.toFixed(0)}%`,phase==='scan'&&R?`SIG ${R.id}`:'SIG ——',phase==='scan'&&tt>9.4&&R?`FREQ ${R.freq} Hz`:''];Rr.forEach((s,i)=>x.fillText(s,w-lx,ly+i*lh));x.restore();
+ [`HKV ENGINE v6`,`ZONES 16/16`,`SCAN ${scanPct.toFixed(0)}%`,phase==='scan'&&R?`SIG ${R.id}`:'SIG ——',phase==='scan'&&tt>9.4&&R?`FREQ ${R.freq} Hz`:''].forEach((s,i)=>x.fillText(s,w-lx,ly+i*lh));x.restore();
 
- if(phase==='preview'){x.save();x.strokeStyle='rgba(245,191,79,.6)';x.setLineDash([8*f,8*f]);x.lineWidth=2*f;x.beginPath();x.ellipse(cx,hy,ringR*.8,ringR,0,0,7);x.stroke();x.restore()}
+ if(phase==='preview'){
+  const okNow=isP||det.state==='failed';
+  if(okNow){if(!presentSince)presentSince=now}else presentSince=0;
+  const rdy=!!presentSince&&now-presentSince>500,btn=$('#scanBtn');
+  if(btn.disabled===rdy){btn.disabled=!rdy;if(rdy){Snd.beep(990,.12,.12);vib(25)}}
+  const st=det.state==='failed'?'Kandhe aur chehra frame mein rakh ke SCAN dabaayein':det.state!=='ready'?'AI body detector load ho raha hai…':isP?'Insaan detect hua. SCAN dabaayein':'Koi insaan nahi dikha. Frame mein aayein';
+  const se=$('#stStatus');if(se.textContent!==st)se.textContent=st;
+  P.forEach((p,i)=>drawChakraDot(x,p.x,p.y,CHAKRAS[i].hex,isP?.5:.18,ts,m*.02));
+ }
 
  if(phase==='scan'&&R){
   const bp=clamp((tt-1.4)/7.9,0,1),beamY=lerp(h*.97,h*.06,bp);
-  // aura bloom
-  const ak=clamp((tt-9.2)/1.6,0,1);drawAura(x,w,h,R,ts,ak*(1+.15*Math.sin(ts*6)));
-  // nazar smoke then purify
-  if(tt>10.2&&tt<11.8){const sk=Math.sin((tt-10.2)/1.6*Math.PI)*(.25+R.nl*.18);x.save();for(let i=0;i<10;i++){const px=cx+Math.sin(ts*.7+i*2.3)*w*.35,py=h*(.25+i*.06)+Math.cos(ts+i)*20*f,rr=m*.2;const g=x.createRadialGradient(px,py,0,px,py,rr);g.addColorStop(0,`rgba(40,40,52,${sk*.7})`);g.addColorStop(1,'rgba(40,40,52,0)');x.fillStyle=g;x.fillRect(px-rr,py-rr,rr*2,rr*2)}x.restore()}
-  // beam
+  drawAura(x,w,h,R,ts,clamp((tt-9.2)/1.6,0,1)*(1+.15*Math.sin(ts*6)),C);
+  if(tt>10.2&&tt<11.8){const sk=Math.sin((tt-10.2)/1.6*Math.PI)*(.25+R.nl*.18);x.save();for(let i=0;i<10;i++){const px=C.x+Math.sin(ts*.7+i*2.3)*C.rx*.9,py=C.y-C.ry*.6+i*C.ry*.13+Math.cos(ts+i)*20*f,rr=m*.2;const g=x.createRadialGradient(px,py,0,px,py,rr);g.addColorStop(0,`rgba(40,40,52,${sk*.7})`);g.addColorStop(1,'rgba(40,40,52,0)');x.fillStyle=g;x.fillRect(px-rr,py-rr,rr*2,rr*2)}x.restore()}
   if(bp>0&&bp<1){x.save();x.globalCompositeOperation='lighter';const bh=140*f;const g=x.createLinearGradient(0,beamY-bh,0,beamY+bh*.3);g.addColorStop(0,'rgba(88,240,226,0)');g.addColorStop(.85,'rgba(88,240,226,.28)');g.addColorStop(1,'rgba(88,240,226,0)');x.fillStyle=g;x.fillRect(0,beamY-bh,w,bh*1.3);x.fillStyle='rgba(200,255,250,.95)';x.shadowColor='#58f0e2';x.shadowBlur=24*f;x.fillRect(0,beamY-1.5*f,w,3*f);
    for(let i=0;i<w;i+=12*f){if(Math.random()<.25){x.fillStyle=`rgba(88,240,226,${Math.random()*.8})`;x.fillRect(i,beamY-Math.random()*40*f,2*f,2*f)}}x.restore()}
-  // chakras
-  CHAKRAS.forEach((c,i)=>{const y=h*CK_Y[i];if(ignited[i]<0&&beamY<=y&&bp>0){ignited[i]=tt;Snd.beep(330*Math.pow(1.19,i),.25,.2,'triangle');Snd.beep(660*Math.pow(1.19,i),.12,.08);for(let p=0;p<26;p++){const a=Math.random()*7,s=(1+Math.random()*4)*f;parts.push({x:cx,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,c:c.hex,sz:(1+Math.random()*2.5)*f})}flashes.push({y,c:c.hex,t:tt})}
-   if(ignited[i]>=0){const age=tt-ignited[i];drawChakraDot(x,w,h,i,1,ts,true);
+  x.save();x.globalCompositeOperation='lighter';x.lineWidth=4*f;for(let i=0;i<6;i++){if(ignited[i]<0||ignited[i+1]<0)continue;const g=x.createLinearGradient(P[i].x,P[i].y,P[i+1].x,P[i+1].y);g.addColorStop(0,rgba(CHAKRAS[i].hex,.6));g.addColorStop(1,rgba(CHAKRAS[i+1].hex,.6));x.strokeStyle=g;x.beginPath();x.moveTo(P[i].x,P[i].y);x.lineTo(P[i+1].x,P[i+1].y);x.stroke()}x.restore();
+  CHAKRAS.forEach((c,i)=>{const y=P[i].y,cx=P[i].x;if(ignited[i]<0&&beamY<=y&&bp>0){ignited[i]=tt;Snd.beep(330*Math.pow(1.19,i),.25,.2,'triangle');Snd.beep(660*Math.pow(1.19,i),.12,.08);vib(30);for(let p=0;p<26;p++){const a=Math.random()*7,s=(1+Math.random()*4)*f;parts.push({x:cx,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,c:c.hex,sz:(1+Math.random()*2.5)*f})}}
+   if(ignited[i]>=0){const age=tt-ignited[i];drawChakraDot(x,cx,y,c.hex,1,ts,m*.045);
     x.save();x.strokeStyle=rgba(c.hex,clamp(1-age/1.2,0,1));x.lineWidth=3*f;x.beginPath();x.arc(cx,y,m*.05+age*m*.25,0,7);x.stroke();x.restore();
-    const v=Math.round(R.ch[i]*clamp(age/.9,0,1));const side=i%2?-1:1,lx2=cx+side*m*.12,txt=`${c.n.toUpperCase()}  ${v}%`;
-    x.save();x.strokeStyle=rgba(c.hex,.8);x.lineWidth=1.5*f;x.beginPath();x.moveTo(cx+side*m*.05,y);x.lineTo(lx2,y);x.stroke();x.font=`600 ${12*f}px "IBM Plex Mono",monospace`;x.textAlign=side>0?'left':'right';x.fillStyle=c.hex;x.shadowColor=c.hex;x.shadowBlur=10*f;x.fillText(txt,lx2+side*6*f,y+4*f);x.restore()}});
-  // energy column
-  x.save();x.globalCompositeOperation='lighter';const col=x.createLinearGradient(0,h,0,0);CHAKRAS.forEach((c,i)=>col.addColorStop(1-CK_Y[i],rgba(c.hex,.0+(ignited[i]>=0?.5:0))));x.fillStyle=col;x.fillRect(cx-2*f,h*.1,4*f,h*.85);x.restore();
-  // rising motes
-  if(tt<12)for(let p=0;p<3;p++)parts.push({x:cx+(Math.random()-.5)*w*.8,y:h,vx:(Math.random()-.5)*.6*f,vy:-(1+Math.random()*3)*f,life:1,c:Math.random()<.5?R.aura.hex:'#58f0e2',sz:(1+Math.random()*2)*f});
+    const v=Math.round(R.ch[i]*clamp(age/.9,0,1)),side=i%2?-1:1,lx2=cx+side*m*.12;
+    x.save();x.strokeStyle=rgba(c.hex,.8);x.lineWidth=1.5*f;x.beginPath();x.moveTo(cx+side*m*.05,y);x.lineTo(lx2,y);x.stroke();x.font=`600 ${12*f}px "IBM Plex Mono",monospace`;x.textAlign=side>0?'left':'right';x.fillStyle=c.hex;x.shadowColor=c.hex;x.shadowBlur=10*f;x.fillText(`${c.n.toUpperCase()}  ${v}%`,lx2+side*6*f,y+4*f);x.restore()}});
+  if(tt<12)for(let p=0;p<3;p++)parts.push({x:C.x+(Math.random()-.5)*w*.8,y:h,vx:(Math.random()-.5)*.6*f,vy:-(1+Math.random()*3)*f,life:1,c:Math.random()<.5?R.aura.hex:'#58f0e2',sz:(1+Math.random()*2)*f});
   x.save();x.globalCompositeOperation='lighter';parts=parts.filter(p=>(p.life-=.012)>0);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;x.fillStyle=rgba(p.c,p.life);x.beginPath();x.arc(p.x,p.y,p.sz,0,7);x.fill()});x.restore();
-  // glitch slices
+  if(det.state==='ready'&&!isP&&tt>1&&tt<12){x.save();x.font=`600 ${14*f}px "IBM Plex Mono",monospace`;x.textAlign='center';x.fillStyle=`rgba(255,90,90,${.6+.4*Math.sin(ts*10)})`;x.fillText('TARGET LOST · FRAME MEIN RAHEIN',w/2,top+bl+110*f);x.restore()}
   if((tt>1.2&&tt<1.4)||(tt>9.2&&tt<9.35)||(tt>11.8&&tt<11.95)||Math.random()<.015){for(let i=0;i<6;i++){const y=Math.random()*h,hh=(4+Math.random()*30)*f,dx=(Math.random()-.5)*40*f;try{x.drawImage(cv,0,y,w,hh,dx,y,w,hh)}catch(e){}x.fillStyle=Math.random()<.5?'rgba(255,0,80,.12)':'rgba(0,255,230,.12)';x.fillRect(0,y,w,hh)}if(Math.random()<.3)Snd.glitch()}
-  // final flash
+  if(tt>11.3&&!shot){const s=Math.min(1,900/w);shot=document.createElement('canvas');shot.width=Math.round(w*s);shot.height=Math.round(h*s);shot.getContext('2d').drawImage(cv,0,0,shot.width,shot.height);Snd.beep(1400,.06,.1);vib([20,40,20])}
   if(tt>12.3){const k=clamp(1-Math.abs(tt-12.75)/.45,0,1);x.fillStyle=`rgba(255,240,200,${k*.9})`;x.fillRect(0,0,w,h)}
-  // status + progress
   let st='';STEPS.forEach(([a,s])=>{if(tt>=a)st=s});const se=$('#stStatus');if(se.textContent!==st)se.textContent=st;$('#stProg').style.width=scanPct+'%';
-  if(tt>9.25&&!flashes.aura){flashes.aura=1;Snd.whoosh(1.6,.35);Snd.sweep(200,1400,1.8,.07)}
-  if(tt>12.3&&!flashes.bell){flashes.bell=1;Snd.bell(528,.45);setTimeout(()=>Snd.bell(792,.25),180)}
+  if(tt>9.25&&!flags.aura){flags.aura=1;Snd.whoosh(1.6,.35);Snd.sweep(200,1400,1.8,.07)}
+  if(tt>12.3&&!flags.bell){flags.bell=1;Snd.bell(528,.45);setTimeout(()=>Snd.bell(792,.25),180);vib(80)}
   if(tt>=T){phase='done';cancelAnimationFrame(raf);
    const base=document.createElement('canvas');base.width=720;base.height=960;drawSrc(base.getContext('2d'),720,960);
-   stopCam();stage.hidden=true;finishResult(base,true)}
+   const bpts=srcPts?ptsFor(720,960).map(p=>[p.x/720,p.y/960]):null;
+   stopCam();stage.hidden=true;
+   finishResult(base,true,bpts,shot,true)}
  }
 }
 
 /* ================= RESULT ================= */
-let resRaf=0,resBase=null;
+let resBase=null,resPts=null,resShot=null;
 function statusOf(v){return v<50?['Block','#ff5a5a']:v<65?['Kamzor','#ff8f3d']:v<88?['Santulit','#3ddc84']:['Ati-sakriya','#ffc53d']}
-function finishResult(base,save){
- const P=reading(cur.name,cur.dob,cur.gen);R=P;resBase=base;if(save)saveHist(base);
+function basePts(){return resPts?resPts.map(([a,b])=>({x:a*720,y:b*960})):CK_Y.map(f=>({x:360,y:960*f}))}
+function baseCtr(p){if(!resPts)return null;return{x:p[3].x,y:(p[6].y+p[0].y)/2,rx:300,ry:Math.max((p[0].y-p[6].y)*.62,300),hx:p[6].x,hy:p[6].y}}
+function renderAuraFrame(x,t,dots){x.globalCompositeOperation='source-over';x.drawImage(resBase,0,0,720,960);x.fillStyle='rgba(10,4,30,.2)';x.fillRect(0,0,720,960);const p=basePts();drawAura(x,720,960,R,t,1,baseCtr(p));if(dots)p.forEach((q,i)=>drawChakraDot(x,q.x,q.y,CHAKRAS[i].hex,.85,t,22))}
+function finishResult(base,save,pts,sh,fromStage){
+ const P=reading(cur.name,cur.dob,cur.gen);R=P;resBase=base;resPts=pts;
+ if(save)saveHist(base,pts);
+ if(!sh){sh=document.createElement('canvas');sh.width=720;sh.height=960;renderAuraFrame(sh.getContext('2d'),2,true)}resShot=sh;
  Snd.droneLevel(.12);
- const nzC=NAZAR[P.nl].c;const salut=P.gen==='f'?'ji':P.gen==='m'?'ji':'';
+ const N=P.num,nzC=NAZAR[P.nl].c;
  $('#rBody').innerHTML=`
  <div style="display:flex;flex-direction:column;gap:18px">
   <div class="aura-frame"><canvas id="rcv" width="720" height="960"></canvas><span class="tag">AURA CAPTURE · ${P.id}</span></div>
   <div class="hero-r">
-   <p class="eyebrow">Aura Scan Report</p>
+   <p class="eyebrow">Aura Scan Report · ${new Date().toLocaleDateString('en-IN')}</p>
    <h2 id="rName"></h2>
-   <p class="muted">Janm tithi ${P.dob.split('-').reverse().join('-')} · Mulank ${P.mulank} · Bhagyank ${P.bhagyank}</p>
+   <p class="muted">Janm tithi ${P.dob.split('-').reverse().join('-')} · Mulank ${P.mulank} · Bhagyank ${P.bhagyank} · Naamank ${N.comp}/${N.single}</p>
+  </div>
+  <div class="card">
+   <p class="eyebrow" style="color:var(--gold)">Divya Report</p>
+   <div class="row">
+    <button class="btn primary" id="pdfBtn" type="button">PDF Download</button>
+    <button class="btn cyan" id="voiceBtn" type="button">Report Sunein</button>
+   </div>
+   <button class="btn block" id="sharePdf" type="button" hidden>PDF WhatsApp pe Share</button>
   </div>
   <div class="card">
    <div style="display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:flex-end">
@@ -509,6 +634,10 @@ function finishResult(base,save){
     <div class="score"><span class="big">${P.energy}</span><span class="of">/100<br>Aura Score</span></div>
    </div>
    <p class="msg">${esc(P.aura.m)}</p>
+  </div>
+  <div class="card">
+   <p class="eyebrow">Live Scan Capture</p>
+   <img class="shot" id="shotImg" alt="Live aura scan capture">
   </div>
   <div class="card">
    <p class="eyebrow">Positivity vs Negativity</p>
@@ -537,10 +666,35 @@ function finishResult(base,save){
    <ul class="list kami">${P.kami.map(k=>`<li>${esc(k)}</li>`).join('')}</ul>
   </div>
   <div class="card">
-   <p class="eyebrow">Ank Shastra aur Vastu</p>
+   <p class="eyebrow">Cheiro Ank Jyotish (Chaldean)</p>
+   <div class="numtiles">
+    <div class="numtile"><b>${N.mul}</b><small>Mulank</small></div>
+    <div class="numtile"><b>${N.bhag}</b><small>Bhagyank</small></div>
+    <div class="numtile"><b>${N.comp}/${N.single}</b><small>Naamank</small></div>
+   </div>
+   ${N.cm?`<div><p style="font-weight:700;color:var(--gold)">Ank ${N.comp}: ${N.cm[0]}</p><p class="muted" style="font-size:15px">${N.cm[1]}</p></div>`:''}
+   <p class="muted" style="font-size:15px">Naamank ${N.single}: ${N.singleM}</p>
+   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-weight:700">Naam aur Mulank ka mel</span><span class="pill" style="color:${N.compat[1]}">${N.compat[0]}</span></div>
+   <p class="muted" style="font-size:14px">${N.compat[2]}</p>
+  </div>
+  <div class="card">
+   <p class="eyebrow">Lo Shu Grid</p>
+   <div class="loshu">${[4,9,2,3,5,7,8,1,6].map(n=>`<span class="${N.cnt[n]?'has':'miss'}">${N.cnt[n]?String(n).repeat(Math.min(N.cnt[n],3)):n}</span>`).join('')}</div>
+   <p style="font-weight:700">Gaayab ank: ${N.missing.join(', ')||'Koi nahi'}</p>
+   <ul class="list upay">${N.missing.slice(0,4).map(n=>`<li><b>${n}</b>: ${LOSHU_REM[n]}</li>`).join('')}</ul>
+  </div>
+  <div class="card">
+   <p class="eyebrow">Kua Ank aur Shubh Dishaayein</p>
    <dl class="kv">
-    <dt>Mulank</dt><dd>${P.mulank} · Grah ${P.g[0]}</dd>
-    <dt>Bhagyank</dt><dd>${P.bhagyank}</dd>
+    <dt>Kua ank</dt><dd>${N.kua}</dd>
+    ${N.kuaDirs.map((d,i)=>`<dt>${KUA_LBL[i]}</dt><dd>${d}</dd>`).join('')}
+    <dt>Personal Year 2026</dt><dd>${N.py}</dd>
+   </dl>
+  </div>
+  <div class="card">
+   <p class="eyebrow">Grah aur Vastu</p>
+   <dl class="kv">
+    <dt>Grah</dt><dd>${P.g[0]}</dd>
     <dt>Shubh disha</dt><dd>${P.g[1]}</dd>
     <dt>Shubh rang</dt><dd>${P.g[2]}</dd>
     <dt>Shubh din</dt><dd>${P.g[3]}</dd>
@@ -560,48 +714,142 @@ function finishResult(base,save){
    </div>
   </div>
   <div class="row">
-   <button class="btn primary" id="saveBtn" type="button">Report Image Save</button>
-   <a class="btn" id="waBtn" target="_blank" rel="noopener">WhatsApp pe Bhejein</a>
+   <button class="btn" id="saveBtn" type="button">Story Image Save</button>
+   <a class="btn" id="waBtn" target="_blank" rel="noopener">WhatsApp Text</a>
   </div>
   <button class="btn block" id="copyBtn" type="button">Report Text Copy</button>
-  <div class="sig"><span>Signature ${P.id}</span><span>Har scan par yahi reading aayegi</span></div>
+  <div class="sig"><span>Signature ${P.id}</span><span>HKV Engine v6</span></div>
  </div>`;
- $('#rName').textContent=`${P.name} ${salut}`.trim();
+ $('#rName').textContent=P.name;
+ $('#shotImg').src=sh.toDataURL('image/jpeg',.88);
  $('#waBtn').href='https://wa.me/?text='+encodeURIComponent(shareText(P));
  $('#copyBtn').addEventListener('click',()=>copy(shareText(P)));
- $('#saveBtn').addEventListener('click',saveReport);
- show('result');
- const rc=$('#rcv'),rx=rc.getContext('2d');cancelAnimationFrame(resRaf);
- (function an(n){const t=n/1000;rx.globalCompositeOperation='source-over';rx.drawImage(base,0,0,720,960);rx.fillStyle='rgba(10,4,30,.2)';rx.fillRect(0,0,720,960);drawAura(rx,720,960,P,t,1);CHAKRAS.forEach((c,i)=>drawChakraDot(rx,720,960,i,.8,t,false));if(!$('#result').hidden)resRaf=requestAnimationFrame(an)})(0);
+ $('#saveBtn').addEventListener('click',saveStory);
+ $('#pdfBtn').addEventListener('click',()=>makePdf(false));
+ $('#voiceBtn').addEventListener('click',speak);
+ try{if(navigator.canShare&&navigator.canShare({files:[new File([new Blob(['x'])],'a.pdf',{type:'application/pdf'})]}))$('#sharePdf').hidden=false}catch(e){}
+ $('#sharePdf').addEventListener('click',()=>makePdf(true));
+ if(fromStage){try{history.replaceState({s:'result'},'')}catch(e){}show('result',false)}else show('result',screen!=='result');
+ const rx=$('#rcv').getContext('2d');cancelAnimationFrame(resRaf);
+ (function an(n){renderAuraFrame(rx,n/1000,true);if(screen==='result')resRaf=requestAnimationFrame(an)})(0);
 }
-function shareText(P){return `✨ HKV AURA SCAN REPORT ✨\n${P.name}\nAura: ${P.aura.n} (${P.aura.en}) · Score ${P.energy}/100\nPositive ${P.pos}% · Negative ${P.neg}%\nNazar Dosh: ${NAZAR[P.nl].n}\nBlock chakra: ${CHAKRAS[P.weak].n}\nShubh disha: ${P.g[1]}\nSignature: ${P.id}\n\nApna aura scan karwaayein:\nHarssh Bhardwaj · Hare Krishna Vastu\nInstagram @vastuexpertharssh`}
+function shareText(P){return `✨ HKV AURA SCAN REPORT ✨\n${P.name}\nAura: ${P.aura.n} (${P.aura.en}) · Score ${P.energy}/100\nPositive ${P.pos}% · Negative ${P.neg}%\nNazar Dosh: ${NAZAR[P.nl].n}\nBlock chakra: ${CHAKRAS[P.weak].n}\nMulank ${P.mulank} · Bhagyank ${P.bhagyank} · Naamank ${P.num.comp}/${P.num.single}\nShubh disha: ${P.g[1]}\nSignature: ${P.id}\n\nApna aura scan karwaayein:\nHarssh Bhardwaj · Hare Krishna Vastu\nInstagram @vastuexpertharssh`}
 async function copy(t){try{await navigator.clipboard.writeText(t);toast('Report text copy ho gaya')}catch(e){const m=$('#modal');m.innerHTML=`<div class="card"><p class="eyebrow">Text select karke copy karein</p><textarea id="cpT" style="width:100%;height:220px;font:14px var(--fm);background:var(--void);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;box-sizing:border-box"></textarea><button class="btn block" id="mClose" type="button">Band Karein</button></div>`;$('#cpT').value=t;m.hidden=false;$('#cpT').select();$('#mClose').onclick=()=>m.hidden=true}}
 
-/* ================= REPORT IMAGE (1080x1920 story) ================= */
+/* ================= HINDI VOICE ================= */
+function speak(){const ss=window.speechSynthesis;if(!ss){toast('Is phone mein voice support nahi hai');return}
+ if(ss.speaking){ss.cancel();$('#voiceBtn').textContent='Report Sunein';return}
+ const P=R,c=CHAKRAS[P.weak];
+ const t=`${P.name} जी, आपकी ऑरा स्कैन रिपोर्ट तैयार है। आपका मुख्य आभा रंग ${P.aura.hi} है, और आपका ऑरा स्कोर सौ में से ${P.energy} है। आपकी ऊर्जा ${P.pos} प्रतिशत सकारात्मक और ${P.neg} प्रतिशत नकारात्मक है। ${NAZAR[P.nl].hi} नज़र दोष पाया गया है। आपका ${c.hi} चक्र कमज़ोर है। आपका मूलांक ${P.mulank} और भाग्यांक ${P.bhagyank} है। उपाय रिपोर्ट में दिए गए हैं। पूरी सलाह के लिए हर्ष भारद्वाज जी से संपर्क करें। हरे कृष्णा।`;
+ const u=new SpeechSynthesisUtterance(t);u.lang='hi-IN';u.rate=.95;const v=ss.getVoices().find(v=>/^hi/i.test(v.lang));if(v)u.voice=v;
+ u.onend=()=>{const b=$('#voiceBtn');if(b)b.textContent='Report Sunein'};$('#voiceBtn').textContent='Rokein';Snd.droneLevel(.05);ss.speak(u)}
+
+/* ================= FILE SAVE ================= */
+async function saveBlob(blob,name){let dl=null;try{dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null}catch(e){}
+ if(dl){try{await dl.save({filename:name,data:blob});toast('Save ho gaya');return true}catch(e){if(e&&e.code==='declined')return false}}
+ try{const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),30000);toast('Download shuru ho gaya');return true}catch(e){return false}}
+
+/* ================= DIVINE PDF (4 pages) ================= */
+const PW=1240,PH=1754,GOLD='#f5bf4f',CY='#58f0e2',TX='#efe9ff',MU='#a59cc9';
 function rr(x,a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()}
-function buildReport(){const P=R,c=document.createElement('canvas');c.width=1080;c.height=1920;const x=c.getContext('2d');
+function wrap(x,t,X,Y,W,lh){const words=String(t).split(' ');let line='';for(const w of words){const test=line?line+' '+w:w;if(x.measureText(test).width>W&&line){x.fillText(line,X,Y);Y+=lh;line=w}else line=test}if(line){x.fillText(line,X,Y);Y+=lh}return Y}
+function pageBase(n,title){const c=document.createElement('canvas');c.width=PW;c.height=PH;const x=c.getContext('2d');
+ const bg=x.createLinearGradient(0,0,0,PH);bg.addColorStop(0,'#140d2e');bg.addColorStop(.5,'#0b0820');bg.addColorStop(1,'#05040b');x.fillStyle=bg;x.fillRect(0,0,PW,PH);
+ const gl=x.createRadialGradient(PW/2,PH*.45,0,PW/2,PH*.45,PW*.7);gl.addColorStop(0,'rgba(245,191,79,.08)');gl.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=gl;x.fillRect(0,0,PW,PH);
+ const wm=document.createElement('canvas');wm.width=wm.height=1000;drawMandala(wm,0,false);x.save();x.globalAlpha=.07;x.drawImage(wm,PW/2-500,PH/2-500);x.restore();
+ x.strokeStyle=GOLD;x.lineWidth=4;x.strokeRect(40,40,PW-80,PH-80);x.lineWidth=1.5;x.strokeStyle='rgba(245,191,79,.5)';x.strokeRect(56,56,PW-112,PH-112);
+ [[40,40],[PW-40,40],[40,PH-40],[PW-40,PH-40]].forEach(([a,b])=>{x.save();x.translate(a,b);x.rotate(Math.PI/4);x.fillStyle=GOLD;x.fillRect(-12,-12,24,24);x.fillStyle='#0b0820';x.fillRect(-6,-6,12,12);x.restore()});
+ const lg=document.createElement('canvas');lg.width=lg.height=200;drawMandala(lg,1,false);x.drawImage(lg,90,82,96,96);
+ x.textAlign='left';x.fillStyle=GOLD;x.font='44px Marcellus, Georgia, serif';x.fillText('HARE KRISHNA VASTU',204,128);x.fillStyle=MU;x.font='24px "IBM Plex Mono", monospace';x.fillText('HKV AURA SCAN REPORT · '+R.id,206,166);
+ x.strokeStyle='rgba(245,191,79,.4)';x.lineWidth=1.5;x.beginPath();x.moveTo(90,205);x.lineTo(PW-90,205);x.stroke();
+ if(title){x.fillStyle=TX;x.font='52px Marcellus, Georgia, serif';x.fillText(title,90,285)}
+ x.fillStyle=MU;x.font='22px Mukta, sans-serif';x.textAlign='center';x.fillText(`Harssh Bhardwaj · Hare Krishna Vastu · @vastuexpertharssh · Page ${n}/4`,PW/2,PH-80);x.textAlign='left';
+ return[c,x]}
+function sectionLabel(x,t,X,Y,col){x.fillStyle=col||CY;x.font='600 22px "IBM Plex Mono", monospace';x.fillText(t.toUpperCase(),X,Y)}
+function ring(x,cx,cy,r,v,col,label){x.lineWidth=16;x.strokeStyle='rgba(255,255,255,.08)';x.beginPath();x.arc(cx,cy,r,0,7);x.stroke();x.strokeStyle=col;x.lineCap='round';x.beginPath();x.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+Math.PI*2*v/100);x.stroke();x.lineCap='butt';x.textAlign='center';x.fillStyle=TX;x.font='44px Marcellus, Georgia, serif';x.fillText(v+'%',cx,cy+14);x.fillStyle=MU;x.font='22px Mukta, sans-serif';x.fillText(label,cx,cy+r+44);x.textAlign='left'}
+function buildPdfPages(){const P=R,N=P.num,pages=[];
+ {const[c,x]=pageBase(1,'');
+  x.textAlign='center';x.fillStyle=GOLD;x.font='30px "IBM Plex Mono", monospace';x.fillText('॥ DIVYA AURA PARIKSHA ॥',PW/2,280);
+  x.fillStyle=TX;x.font='76px Marcellus, Georgia, serif';x.fillText('Aura Scan Report',PW/2,370);x.textAlign='left';
+  const fw=780,fh=880,fx=(PW-fw)/2,fy=420,arch=()=>{x.beginPath();x.moveTo(fx,fy+fw/2);x.arc(fx+fw/2,fy+fw/2,fw/2,Math.PI,0);x.lineTo(fx+fw,fy+fh);x.lineTo(fx,fy+fh);x.closePath()};
+  x.save();arch();x.clip();const s=Math.max(fw/resShot.width,fh/resShot.height);x.drawImage(resShot,fx+(fw-resShot.width*s)/2,fy+(fh-resShot.height*s)/2,resShot.width*s,resShot.height*s);x.restore();
+  x.strokeStyle=GOLD;x.lineWidth=6;arch();x.stroke();x.shadowColor=GOLD;x.shadowBlur=30;x.lineWidth=2;arch();x.stroke();x.shadowBlur=0;
+  x.fillStyle='rgba(0,0,0,.6)';rr(x,fx+20,fy+fh-60,280,40,10);x.fill();x.fillStyle=CY;x.font='20px "IBM Plex Mono", monospace';x.fillText('LIVE SCAN CAPTURE',fx+36,fy+fh-33);
+  x.textAlign='center';x.fillStyle=TX;x.font='62px Marcellus, Georgia, serif';x.fillText(P.name.slice(0,28),PW/2,1400);
+  x.fillStyle=MU;x.font='26px Mukta, sans-serif';x.fillText(`Janm tithi ${P.dob.split('-').reverse().join('-')} · Scan ${new Date().toLocaleDateString('en-IN')}`,PW/2,1446);
+  x.fillStyle=P.aura.hex;x.font='44px Marcellus, Georgia, serif';x.fillText(`${P.aura.n} Aura · ${P.aura.en}`,PW/2,1520);
+  x.fillStyle=GOLD;x.font='96px Marcellus, Georgia, serif';x.textAlign='right';x.fillText(P.energy,PW/2-10,1630);x.fillStyle=MU;x.font='26px "IBM Plex Mono", monospace';x.textAlign='left';x.fillText('/100 AURA SCORE',PW/2+10,1612);
+  pages.push(c)}
+ {const[c,x]=pageBase(2,'Urja aur Chakra Vishleshan');let y=350;
+  sectionLabel(x,'Positivity vs Negativity',90,y);y+=30;x.fillStyle='#07060f';rr(x,90,y,PW-180,34,17);x.fill();const g=x.createLinearGradient(90,0,90+(PW-180)*P.pos/100,0);g.addColorStop(0,'#2fd38a');g.addColorStop(1,'#ffcc4d');x.fillStyle=g;rr(x,90,y,(PW-180)*P.pos/100,34,17);x.fill();y+=74;
+  x.font='28px Mukta, sans-serif';x.fillStyle='#3ddc84';x.fillText(`Positive ${P.pos}%`,90,y);x.textAlign='right';x.fillStyle=MU;x.fillText(`Negative ${P.neg}%`,PW-90,y);x.textAlign='left';y+=70;
+  sectionLabel(x,'Nazar Dosh',90,y);x.fillStyle=NAZAR[P.nl].c;x.font='34px Marcellus, Georgia, serif';x.textAlign='right';x.fillText(`${NAZAR[P.nl].n} · ${P.nz}%`,PW-90,y+4);x.textAlign='left';y+=26;
+  for(let i=0;i<4;i++){x.fillStyle=i<=P.nl?NAZAR[P.nl].c:'#2a2350';rr(x,90+i*((PW-180)/4),y,(PW-180)/4-10,16,8);x.fill()}y+=58;
+  x.font='26px Mukta, sans-serif';P.signs.forEach(s=>{x.fillStyle='#ff5a5a';x.fillText('◆',90,y);x.fillStyle=TX;x.fillText(s,124,y);y+=40});y+=30;
+  sectionLabel(x,'Saat Chakra Santulan',90,y);y+=36;
+  CHAKRAS.slice().reverse().forEach((ck,ri)=>{const i=6-ri,v=P.ch[i],[s,sc]=statusOf(v);
+   const gg=x.createRadialGradient(108,y+14,0,108,y+14,24);gg.addColorStop(0,ck.hex);gg.addColorStop(1,rgba(ck.hex,0));x.fillStyle=gg;x.beginPath();x.arc(108,y+14,24,0,7);x.fill();
+   x.fillStyle=TX;x.font='30px Marcellus, Georgia, serif';x.fillText(ck.n,146,y+22);x.fillStyle=MU;x.font='20px Mukta, sans-serif';x.fillText(`${ck.en} · ${ck.area}`,146,y+50);
+   x.fillStyle='#07060f';rr(x,580,y+6,420,20,10);x.fill();x.fillStyle=ck.hex;rr(x,580,y+6,4.2*v,20,10);x.fill();
+   x.textAlign='right';x.fillStyle=TX;x.font='28px "IBM Plex Mono", monospace';x.fillText(v+'%',PW-90,y+24);x.fillStyle=sc;x.font='700 20px Mukta, sans-serif';x.fillText(s,PW-90,y+52);x.textAlign='left';y+=80});
+  y+=24;sectionLabel(x,'Urja Maapdand',90,y);y+=120;
+  [[P.prana,'Pran Shakti','#2fd38a'],[P.shield,'Suraksha Kavach',GOLD],[P.shanti,'Manasik Shanti','#4fb7ff'],[P.karmic,'Karmic Bhaar','#ff8f3d']].forEach(([v,l,col],i)=>ring(x,212+i*272,y,80,v,col,l));
+  pages.push(c)}
+ {const[c,x]=pageBase(3,'Cheiro Ank Jyotish');let y=340;
+  [[N.mul,'Mulank'],[N.bhag,'Bhagyank'],[`${N.comp}/${N.single}`,'Naamank'],[N.py,'Personal Year 2026']].forEach(([v,l],i)=>{const bx=90+i*270;x.fillStyle='rgba(20,16,48,.9)';rr(x,bx,y,250,170,20);x.fill();x.strokeStyle='rgba(245,191,79,.5)';x.lineWidth=2;rr(x,bx,y,250,170,20);x.stroke();x.textAlign='center';x.fillStyle=GOLD;x.font='60px Marcellus, Georgia, serif';x.fillText(v,bx+125,y+90);x.fillStyle=MU;x.font='22px Mukta, sans-serif';x.fillText(l,bx+125,y+140);x.textAlign='left'});y+=240;
+  sectionLabel(x,'Naamank ka Rahasya (Chaldean)',90,y);y+=50;
+  if(N.cm){x.fillStyle=GOLD;x.font='36px Marcellus, Georgia, serif';x.fillText(`Ank ${N.comp}: ${N.cm[0]}`,90,y);y+=46;x.fillStyle=TX;x.font='26px Mukta, sans-serif';y=wrap(x,N.cm[1],90,y,PW-180,38)}
+  x.fillStyle=MU;x.font='26px Mukta, sans-serif';y=wrap(x,`Naamank ${N.single}: ${N.singleM}`,90,y,PW-180,38);y+=10;
+  x.fillStyle=TX;x.font='700 26px Mukta, sans-serif';const lbl='Naam aur Mulank ka mel: ';x.fillText(lbl,90,y);const lw=x.measureText(lbl).width;x.fillStyle=N.compat[1];x.fillText(N.compat[0],90+lw,y);y+=40;x.fillStyle=MU;x.font='24px Mukta, sans-serif';y=wrap(x,N.compat[2],90,y,PW-180,36);y+=40;
+  sectionLabel(x,'Lo Shu Grid',90,y);sectionLabel(x,'Kua Ank aur Dishaayein',660,y);y+=30;
+  const gs=150;[4,9,2,3,5,7,8,1,6].forEach((n,i)=>{const cx=90+(i%3)*(gs+10),cy=y+Math.floor(i/3)*(gs+10),has=N.cnt[n];
+   if(has){const g=x.createLinearGradient(cx,cy,cx+gs,cy+gs);g.addColorStop(0,GOLD);g.addColorStop(1,'#ff8a2a');x.fillStyle=g}else x.fillStyle='rgba(20,16,48,.9)';rr(x,cx,cy,gs,gs,18);x.fill();x.strokeStyle='rgba(245,191,79,.4)';x.lineWidth=2;rr(x,cx,cy,gs,gs,18);x.stroke();
+   x.textAlign='center';x.fillStyle=has?'#1a0f00':'#3a3360';x.font='600 44px "IBM Plex Mono", monospace';x.fillText(has?String(n).repeat(Math.min(has,3)):n,cx+gs/2,cy+gs/2+15);x.textAlign='left'});
+  let ky=y+20;x.fillStyle=GOLD;x.font='72px Marcellus, Georgia, serif';x.fillText(N.kua,660,ky+60);x.fillStyle=MU;x.font='22px Mukta, sans-serif';x.fillText('Kua ank',730,ky+54);ky+=110;
+  N.kuaDirs.forEach((d,i)=>{x.fillStyle=MU;x.font='24px Mukta, sans-serif';x.fillText(KUA_LBL[i],660,ky);x.fillStyle=TX;x.font='600 26px "IBM Plex Mono", monospace';x.textAlign='right';x.fillText(d,PW-90,ky);x.textAlign='left';ky+=46});
+  y+=3*(gs+10)+50;sectionLabel(x,'Gaayab Ank ke Upay',90,y);y+=46;x.font='26px Mukta, sans-serif';
+  N.missing.slice(0,5).forEach(n=>{x.fillStyle=GOLD;x.font='600 26px "IBM Plex Mono", monospace';x.fillText(String(n),90,y);x.fillStyle=TX;x.font='26px Mukta, sans-serif';y=wrap(x,LOSHU_REM[n],130,y,PW-220,36)+4});
+  pages.push(c)}
+ {const[c,x]=pageBase(4,'Upay aur Margdarshan');let y=350;
+  x.fillStyle='#fff3d1';x.font='italic 32px Marcellus, Georgia, serif';y=wrap(x,'“'+P.aura.m+'”',90,y,PW-180,46)+20;
+  sectionLabel(x,'Mukhya Kamiyaan',90,y,'#ff8f3d');y+=46;x.font='26px Mukta, sans-serif';P.kami.forEach(k=>{x.fillStyle='#ff5a5a';x.fillText('◆',90,y);x.fillStyle=TX;y=wrap(x,k,124,y,PW-214,36)+6});y+=24;
+  sectionLabel(x,'Upay · Remedies',90,y,GOLD);y+=46;P.upay.forEach((u,i)=>{x.fillStyle=GOLD;x.font='600 24px "IBM Plex Mono", monospace';x.fillText(String(i+1).padStart(2,'0'),90,y);x.fillStyle=TX;x.font='26px Mukta, sans-serif';y=wrap(x,u,140,y,PW-230,36)+8});y+=24;
+  sectionLabel(x,'Grah aur Vastu',90,y);y+=46;[['Grah',P.g[0]],['Shubh disha',P.g[1]],['Shubh rang',P.g[2]],['Shubh din',P.g[3]]].forEach(([a,b])=>{x.fillStyle=MU;x.font='26px Mukta, sans-serif';x.fillText(a,90,y);x.fillStyle=TX;x.font='700 26px Mukta, sans-serif';x.fillText(b,340,y);y+=40});
+  const by=Math.max(y+30,1330);x.fillStyle='rgba(42,22,64,.95)';rr(x,90,by,PW-180,230,24);x.fill();x.strokeStyle=GOLD;x.lineWidth=3;rr(x,90,by,PW-180,230,24);x.stroke();
+  x.textAlign='center';x.fillStyle=GOLD;x.font='22px "IBM Plex Mono", monospace';x.fillText('PERSONAL CONSULTATION',PW/2,by+52);x.fillStyle=TX;x.font='36px Marcellus, Georgia, serif';x.fillText('Aura healing aur Vastu correction ke liye',PW/2,by+106);x.fillText('Harssh Bhardwaj se judein',PW/2,by+150);x.fillStyle=CY;x.font='28px "IBM Plex Mono", monospace';x.fillText('@vastuexpertharssh  ·  @harekrishnavastu',PW/2,by+200);
+  x.fillStyle=MU;x.font='20px Mukta, sans-serif';x.fillText('Yeh report spiritual margdarshan ke liye hai. Yeh medical ya lab jaanch nahi hai.',PW/2,PH-120);x.textAlign='left';
+  pages.push(c)}
+ return pages}
+async function makePdf(share){const btn=share?$('#sharePdf'):$('#pdfBtn'),old=btn.textContent;btn.disabled=true;btn.textContent='PDF ban rahi hai…';Snd.beep(880,.1,.1);
+ try{await Promise.all(['44px Marcellus','italic 32px Marcellus','26px Mukta','700 26px Mukta','22px "IBM Plex Mono"','600 22px "IBM Plex Mono"'].map(f=>document.fonts.load(f).catch(()=>{})));
+  if(!window.jspdf)throw new Error('pdf lib');const{jsPDF}=window.jspdf;const doc=new jsPDF({unit:'pt',format:'a4',compress:true});
+  buildPdfPages().forEach((p,i)=>{if(i)doc.addPage();doc.addImage(p.toDataURL('image/jpeg',.9),'JPEG',0,0,595.28,841.89)});
+  const blob=doc.output('blob'),name=`HKV-Aura-Report-${R.name.replace(/[^\w]+/g,'-')}.pdf`;
+  if(share){const file=new File([blob],name,{type:'application/pdf'});try{await navigator.share({files:[file],title:'HKV Aura Report',text:shareText(R)})}catch(e){if(e&&e.name!=='AbortError')await saveBlob(blob,name)}}
+  else await saveBlob(blob,name);Snd.bell(660,.2)}
+ catch(e){toast('PDF nahi ban paayi. Internet check karke dobara try karein.')}
+ btn.disabled=false;btn.textContent=old}
+
+/* ================= STORY IMAGE (1080x1920) ================= */
+function buildStory(){const P=R,c=document.createElement('canvas');c.width=1080;c.height=1920;const x=c.getContext('2d');
  const bg=x.createLinearGradient(0,0,0,1920);bg.addColorStop(0,'#120c26');bg.addColorStop(1,'#07060f');x.fillStyle=bg;x.fillRect(0,0,1080,1920);
  const lg=document.createElement('canvas');lg.width=lg.height=160;drawMandala(lg,1,false);x.drawImage(lg,60,50,120,120);
- x.fillStyle='#f5bf4f';x.font='52px Marcellus, Georgia, serif';x.fillText('HARE KRISHNA VASTU',200,112);x.fillStyle='#a59cc9';x.font='30px Mukta, sans-serif';x.fillText('Harssh Bhardwaj · Aura Scan Report',200,156);
- x.save();rr(x,60,210,960,1000,36);x.clip();x.drawImage(resBase,60,210,960,1280);x.fillStyle='rgba(10,4,30,.2)';x.fillRect(60,210,960,1000);x.translate(60,210);drawAura(x,960,1280,P,2,1);CHAKRAS.forEach((ck,i)=>drawChakraDot(x,960,1280,i,.8,2,false));x.restore();
+ x.fillStyle=GOLD;x.font='52px Marcellus, Georgia, serif';x.fillText('HARE KRISHNA VASTU',200,112);x.fillStyle=MU;x.font='30px Mukta, sans-serif';x.fillText('Harssh Bhardwaj · Aura Scan Report',200,156);
+ x.save();rr(x,60,210,960,1000,36);x.clip();const s=Math.max(960/resShot.width,1000/resShot.height);x.drawImage(resShot,60+(960-resShot.width*s)/2,210+(1000-resShot.height*s)/2,resShot.width*s,resShot.height*s);x.restore();
  x.strokeStyle='#2a2350';x.lineWidth=3;rr(x,60,210,960,1000,36);x.stroke();
- x.fillStyle='#58f0e2';x.font='26px "IBM Plex Mono", monospace';x.fillText('AURA CAPTURE · '+P.id,90,255);
- x.fillStyle='#efe9ff';x.font='60px Marcellus, Georgia, serif';x.fillText(P.name.slice(0,26),60,1295);
+ x.fillStyle=TX;x.font='60px Marcellus, Georgia, serif';x.fillText(P.name.slice(0,26),60,1295);
  x.fillStyle=P.aura.hex;x.font='46px Marcellus, Georgia, serif';x.fillText(`${P.aura.n} Aura`,60,1365);
- x.textAlign='right';x.fillStyle='#f5bf4f';x.font='120px Marcellus, Georgia, serif';x.fillText(P.energy,1020,1370);x.fillStyle='#a59cc9';x.font='28px "IBM Plex Mono", monospace';x.fillText('/100 AURA SCORE',1020,1410);x.textAlign='left';
+ x.textAlign='right';x.fillStyle=GOLD;x.font='120px Marcellus, Georgia, serif';x.fillText(P.energy,1020,1370);x.fillStyle=MU;x.font='28px "IBM Plex Mono", monospace';x.fillText('/100 AURA SCORE',1020,1410);x.textAlign='left';
  x.fillStyle='#07060f';rr(x,60,1440,960,26,13);x.fill();x.fillStyle='#2fd38a';rr(x,60,1440,960*P.pos/100,26,13);x.fill();
- x.font='28px Mukta, sans-serif';x.fillStyle='#3ddc84';x.fillText(`Positive ${P.pos}%`,60,1505);x.textAlign='right';x.fillStyle='#a59cc9';x.fillText(`Negative ${P.neg}%`,1020,1505);x.textAlign='left';
- x.fillStyle='#efe9ff';x.font='32px Mukta, sans-serif';x.fillText('Nazar Dosh:',60,1565);x.fillStyle=NAZAR[P.nl].c;x.fillText(`${NAZAR[P.nl].n} (${P.nz}%)`,240,1565);
- CHAKRAS.forEach((ck,i)=>{const y=1610+i*34;x.fillStyle='#a59cc9';x.font='24px "IBM Plex Mono", monospace';x.fillText(ck.n.toUpperCase(),60,y+18);x.fillStyle='#07060f';rr(x,330,y,600,16,8);x.fill();x.fillStyle=ck.hex;rr(x,330,y,6*P.ch[i],16,8);x.fill();x.fillStyle='#efe9ff';x.textAlign='right';x.fillText(P.ch[i]+'%',1020,y+18);x.textAlign='left'});
- x.fillStyle='#f5bf4f';x.font='30px Mukta, sans-serif';x.textAlign='center';x.fillText('Apna aura scan karwaayein · @vastuexpertharssh',540,1880);return c}
-async function saveReport(){Snd.beep(880,.1,.12);const c=buildReport();
- let dl=null;try{dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null}catch(e){}
- if(dl){c.toBlob(async b=>{try{await dl.save({filename:`Aura-Report-${R.name.replace(/[^\w]+/g,'-')}.png`,data:b});toast('Report save ho gayi')}catch(e){if(e&&e.code!=='declined')showImg(c)}},'image/png');return}
- try{const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download=`Aura-Report-${R.name.replace(/[^\w]+/g,'-')}.png`;document.body.appendChild(a);a.click();a.remove();toast('Report download ho rahi hai')}catch(e){showImg(c)}}
+ x.font='28px Mukta, sans-serif';x.fillStyle='#3ddc84';x.fillText(`Positive ${P.pos}%`,60,1505);x.textAlign='right';x.fillStyle=MU;x.fillText(`Negative ${P.neg}%`,1020,1505);x.textAlign='left';
+ x.fillStyle=TX;x.font='32px Mukta, sans-serif';x.fillText('Nazar Dosh:',60,1565);x.fillStyle=NAZAR[P.nl].c;x.fillText(`${NAZAR[P.nl].n} (${P.nz}%)`,240,1565);
+ CHAKRAS.forEach((ck,i)=>{const y=1610+i*34;x.fillStyle=MU;x.font='24px "IBM Plex Mono", monospace';x.fillText(ck.n.toUpperCase(),60,y+18);x.fillStyle='#07060f';rr(x,330,y,600,16,8);x.fill();x.fillStyle=ck.hex;rr(x,330,y,6*P.ch[i],16,8);x.fill();x.fillStyle=TX;x.textAlign='right';x.fillText(P.ch[i]+'%',1020,y+18);x.textAlign='left'});
+ x.fillStyle=GOLD;x.font='30px Mukta, sans-serif';x.textAlign='center';x.fillText('Apna aura scan karwaayein · @vastuexpertharssh',540,1880);return c}
+async function saveStory(){Snd.beep(880,.1,.12);const c=buildStory();c.toBlob(async b=>{const ok=await saveBlob(b,`Aura-Story-${R.name.replace(/[^\w]+/g,'-')}.png`);if(!ok)showImg(c)},'image/png')}
 function showImg(c){const m=$('#modal');m.innerHTML=`<div class="card"><p class="eyebrow">Image par long-press karke save karein</p><img alt="Aura report" src="${c.toDataURL('image/png')}"><button class="btn block" id="mClose" type="button">Band Karein</button></div>`;m.hidden=false;$('#mClose').onclick=()=>m.hidden=true}
 
 $('#againBtn').addEventListener('click',()=>{cancelAnimationFrame(resRaf);openStage()});
-$('#newBtn').addEventListener('click',()=>{cancelAnimationFrame(resRaf);$('#pname').value='';$('#pdob').value='';show('form');renderHist()});
+$('#newBtn').addEventListener('click',()=>{$('#pname').value='';$('#pdob').value='';history.back()});
 })();
 </script>
 
