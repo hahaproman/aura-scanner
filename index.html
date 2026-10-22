@@ -91,7 +91,8 @@ details.sci[open] summary::after{content:"–"}
 #stage canvas{position:absolute;inset:0;width:100%;height:100%}
 #stage video{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .st-top{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 12px) max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px));background:linear-gradient(rgba(0,0,0,.7),transparent)}
-.st-top b{font-family:var(--fd);font-weight:400;color:var(--gold);letter-spacing:.1em;font-size:15px}
+.st-top b{font-family:var(--fd);font-weight:400;color:var(--gold);letter-spacing:.1em;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+@media (max-width:420px){.st-top b{display:none}}
 .st-bot{position:absolute;left:0;right:0;bottom:0;padding:24px max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 20px) max(16px,env(safe-area-inset-left,0px));background:linear-gradient(transparent,rgba(0,0,0,.85));display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center}
 #stStatus{font-family:var(--fm);font-size:14px;color:var(--cyan);min-height:22px;text-shadow:0 0 12px rgba(88,240,226,.7)}
 .prog{width:100%;max-width:420px;height:4px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}
@@ -219,7 +220,7 @@ ul.upay li::marker{color:var(--gold)}
   <div class="st-top">
     <button class="iconbtn" id="stClose" type="button">‹ Peeche</button>
     <b>HKV AURA SCAN</b>
-    <button class="iconbtn sndBtn" type="button">Sound On</button>
+    <div style="display:flex;gap:8px"><button class="iconbtn" id="flipCam" type="button" aria-label="Camera badlein">↻ Camera</button><button class="iconbtn sndBtn" type="button">Sound On</button></div>
   </div>
   <div class="st-bot">
     <p id="stStatus">Camera shuru ho raha hai…</p>
@@ -398,7 +399,7 @@ const SCI=`<summary>Phone se aura scan kaise hota hai?</summary>
 <div class="sci-body">
  <p class="muted">Is scanner ke peeche ki technology aur physics, seedhe shabdon mein.</p>
  <div class="step"><span class="n">01</span><div><h3>ROSHNI HI DATA HAI</h3><p>Har cheez se roshni (photons) takra kar lautti hai. Phone ke camera mein CMOS sensor hota hai jisme laakhon chhote light-sensor (pixels) lage hote hain. Har pixel par padne wale photons <b>photoelectric effect</b> se electric signal ban jaate hain, aur har pixel Red, Green, Blue teen rang ki matra naapta hai. Ek second mein camera 30 se 60 aise frame leta hai.</p></div></div>
- <div class="step"><span class="n">02</span><div><h3>HUMAN BODY DETECTION</h3><p>App ke andar ek <b>computer vision pose model</b> chalta hai jo har frame mein shareer ke 33 bindu (sir, aankhein, kandhe, kamar) pehchaanta hai. Isi se pata chalta hai ki frame mein asli insaan hai, aur saaton chakra aapke shareer ki sahi jagah par lagte hain. Insaan na ho toh scan shuru hi nahi hota.</p></div></div>
+ <div class="step"><span class="n">02</span><div><h3>HUMAN BODY DETECTION</h3><p>App ke andar ek <b>computer vision pose model</b> chalta hai jo har frame mein shareer ke 33 bindu (sir, aankhein, kandhe, kamar) pehchaanta hai, aur ek face grid chehre ke 468 bindu padhta hai. Isi se pata chalta hai ki frame mein asli insaan hai, aur saaton chakra aapke shareer ki sahi jagah par lagte hain. Insaan na ho toh scan shuru hi nahi hota.</p></div></div>
  <div class="step"><span class="n">03</span><div><h3>LIVE SPECTRAL ANALYSIS</h3><p>Scan ke dauraan app har frame ke pixels padhta hai aur screen par asli naap dikhata hai: <b>Luminance</b> (kitni roshni aap par hai), <b>Color temperature</b> (roshni garam hai ya thandi, Kelvin mein) aur <b>Spectral balance</b> (R, G, B ka anupaat).</p></div></div>
  <div class="step"><span class="n">04</span><div><h3>SHAREER KI APNI ROSHNI</h3><p>Jeevit shareer bhi roshni aur urja chhodta hai. Har cell bahut halki roshni deta hai jise <b>biophoton emission</b> kehte hain, jo lab ke vishesh cameras se naapi gayi hai. Shareer ki garmi <b>infrared</b> rays chhodti hai jo thermal camera mein chamakti hai. <b>Kirlian photography</b> mein high-voltage field ungliyon ke chaaron taraf chamakta ghera dikhati hai.</p></div></div>
  <div class="step"><span class="n">05</span><div><h3>PRITHVI KI DHADKAN</h3><p>Prithvi aur aakash ke beech electromagnetic field <b>7.83 Hz</b> par gunjti hai, jise Schumann Resonance kehte hain. Isliye scan ka base frequency 7.83 Hz rakha gaya hai.</p></div></div>
@@ -460,17 +461,34 @@ async function loadDetector(){if(det.state!=='idle')return;det.state='loading';
  const SRCS=[[new URL('mp/vision_bundle.mjs',location.href).href,new URL('mp/wasm',location.href).href,new URL('models/pose_landmarker_lite.task',location.href).href],
   [`${CDN}/vision_bundle.mjs`,`${CDN}/wasm`,'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task']];
  for(const[mjs,wasm,model]of SRCS){try{const mp=await import(mjs);const fs=await mp.FilesetResolver.forVisionTasks(wasm);
-  const opts=d=>({baseOptions:{modelAssetPath:model,delegate:d},runningMode:'VIDEO',numPoses:1,minPoseDetectionConfidence:.5,minPosePresenceConfidence:.5});
+  const opts=d=>({baseOptions:{modelAssetPath:model,delegate:d},runningMode:'VIDEO',numPoses:1,outputSegmentationMasks:true,minPoseDetectionConfidence:.5,minPosePresenceConfidence:.5});
   try{det.pl=await mp.PoseLandmarker.createFromOptions(fs,opts('GPU'))}catch(e){det.pl=await mp.PoseLandmarker.createFromOptions(fs,opts('CPU'))}
-  det.state='ready';return}catch(e){}}
- det.state='failed'}
-let lastDetT=0,lastVT=-1;
-function runDetect(now){if(det.state!=='ready'||!src)return;
+  det.state='ready';setTimeout(loadFace,300);return}catch(e){}}
+ det.state='failed';setTimeout(loadFace,300)}
+let lastDetT=0,lastVT=-1,maskOK=0;
+const dcv=document.createElement('canvas'),dctx=dcv.getContext('2d',{willReadFrequently:true});
+const mcv=document.createElement('canvas'),mctx=mcv.getContext('2d');
+function runDetect(now){if(!src)return;
  try{if(src===vid){if(vid.readyState<2||vid.currentTime===lastVT)return;lastVT=vid.currentTime}else if(now-lastDetT<150)return;
-  const ts=Math.max(now,lastDetT+1);lastDetT=ts;const r=det.pl.detectForVideo(src,ts);const lm=r&&r.landmarks&&r.landmarks[0];
+  const[sw,sh]=srcDims(),dw=320,dh=Math.max(1,Math.round(320*sh/sw));if(dcv.width!==dw||dcv.height!==dh){dcv.width=dw;dcv.height=dh}dctx.drawImage(src,0,0,dw,dh);
+  runFace(now);if(det.state!=='ready')return;
+  const ts=Math.max(now,lastDetT+1);lastDetT=ts;const r=det.pl.detectForVideo(dcv,ts);
+  const masks=r&&r.segmentationMasks;
+  if(masks&&masks[0]){try{const mk=masks[0],a=mk.getAsFloat32Array(),mw=mk.width,mh=mk.height;if(mcv.width!==mw||mcv.height!==mh){mcv.width=mw;mcv.height=mh}const id=mctx.createImageData(mw,mh),D=id.data;for(let i=0;i<a.length;i++){const j=i*4;D[j]=D[j+1]=D[j+2]=255;D[j+3]=a[i]*255}mctx.putImageData(id,0,0);maskOK=now}catch(e){}masks.forEach(m=>{try{m.close()}catch(e){}})}
+  const lm=r&&r.landmarks&&r.landmarks[0];
   if(lm){const v=[0,11,12].map(i=>lm[i].visibility??1);const conf=v.reduce((a,b)=>a+b,0)/3;if(conf>.5){det.lm=lm;det.seen=now;det.conf=conf;return}}
   if(now-det.seen>600){det.lm=null;det.conf=0}}catch(e){}}
 const present=now=>!!det.lm&&now-det.seen<700;
+const face={state:'idle',fm:null,lm:null,seen:0,busy:false,last:0};
+function loadFace(){if(face.state!=='idle')return;face.state='loading';
+ const sc=document.createElement('script');sc.src=new URL('mp/face/face_mesh.js',location.href).href;
+ sc.onload=()=>{try{face.fm=new window.FaceMesh({locateFile:f=>new URL('mp/face/'+f,location.href).href});face.fm.setOptions({maxNumFaces:1,refineLandmarks:false,minDetectionConfidence:.5,minTrackingConfidence:.5});
+  face.fm.onResults(r=>{const l=r.multiFaceLandmarks&&r.multiFaceLandmarks[0];if(l){face.lm=l;face.seen=performance.now()}});
+  face.fm.initialize().then(()=>{face.state='ready'}).catch(()=>{face.state='failed'})}catch(e){face.state='failed'}};
+ sc.onerror=()=>{face.state='failed'};document.head.appendChild(sc)}
+function runFace(now){if(face.state!=='ready'||face.busy||now-face.last<110)return;face.last=now;face.busy=true;Promise.resolve().then(()=>face.fm.send({image:dcv})).catch(()=>{}).finally(()=>{face.busy=false})}
+const faceOn=now=>!!face.lm&&now-face.seen<600;
+const maskOn=now=>now-maskOK<500;
 
 /* ================= GEOMETRY ================= */
 let src=null,mirror=false;
@@ -484,6 +502,7 @@ function updateSrcPts(){if(!det.lm)return;const[sw,sh]=srcDims(),L=i=>({x:det.lm
  const eye=avg(L(2),L(5)),nose=L(0),mouth=avg(L(9),L(10)),l11=L(11),l12=L(12),shm=avg(l11,l12),sw_=Math.hypot(l11.x-l12.x,l11.y-l12.y);
  const h1=L(23),h2=L(24);const T=Math.min(h1.v,h2.v)>.5?sub(avg(h1,h2),shm):{x:0,y:sw_*1.35};
  const p=[add(shm,T,1),add(shm,T,.78),add(shm,T,.5),add(shm,T,.16),{x:lerp(mouth.x,shm.x,.6),y:lerp(mouth.y,shm.y,.6)},add(eye,sub(eye,nose),.55),add(eye,sub(eye,mouth),1.55)];
+ if(faceOn(performance.now())){const F=i=>({x:face.lm[i].x*sw,y:face.lm[i].y*sh});const aj=F(9),top=F(10),br=F(168);p[5]=aj;p[6]=add(top,sub(top,br),.9)}
  if(!srcPts){srcPts=p;srcPts.sw=sw_}else{p.forEach((q,i)=>{srcPts[i].x=lerp(srcPts[i].x,q.x,.35);srcPts[i].y=lerp(srcPts[i].y,q.y,.35)});srcPts.sw=lerp(srcPts.sw,sw_,.35)}}
 function ptsFor(w,h){if(!srcPts)return CK_Y.map(f=>({x:w/2,y:h*f}));
  const p=srcPts.map(q=>mapPt(q.x,q.y,w,h));const lim=h*.94;
@@ -505,21 +524,34 @@ function drawChakraDot(x,px,py,hex,k,t,size){const r=size*(1+.15*Math.sin(t*4+px
 const stage=$('#stage'),cv=$('#scv'),cx2=cv.getContext('2d');
 let stream=null,phase='idle',t0=0,R=null,parts=[],ignited=[],raf=0,wake=null,liveStats={L:0,K:0,r:0,g:0,b:0},statT=0,flags={},shot=null,presentSince=0;
 const sample=document.createElement('canvas');sample.width=48;sample.height=64;const sx=sample.getContext('2d',{willReadFrequently:true});
-function size(){const d=Math.min(2,devicePixelRatio||1);cv.width=innerWidth*d;cv.height=innerHeight*d}
+function size(){const d=Math.min(1.5,devicePixelRatio||1);cv.width=Math.round(innerWidth*d);cv.height=Math.round(innerHeight*d)}
+function drawCover(x,img,w,h){const[sw,sh]=srcDims();const s=Math.max(w/sw,h/sh),dw=sw*s,dh=sh*s;x.save();if(mirror){x.translate(w,0);x.scale(-1,1)}x.drawImage(img,(w-dw)/2,(h-dh)/2,dw,dh);x.restore()}
+const acv=document.createElement('canvas'),actx=acv.getContext('2d'),tcv=document.createElement('canvas'),tctx=tcv.getContext('2d');
+function tintMask(m,col,blur){if(tcv.width!==m.width||tcv.height!==m.height){tcv.width=m.width;tcv.height=m.height}const t=tctx;t.globalCompositeOperation='source-over';t.clearRect(0,0,tcv.width,tcv.height);t.filter=`blur(${blur}px)`;t.drawImage(m,0,0);t.filter='none';t.globalCompositeOperation='source-in';t.fillStyle=col;t.fillRect(0,0,tcv.width,tcv.height);t.globalCompositeOperation='source-over';return tcv}
+/* aura that lives BEHIND the person: glow hugging the body, cut out over the body */
+function auraBehind(x,w,h,P,t,k,C,mdraw,mimg){if(k<=0)return;if(acv.width!==w||acv.height!==h){acv.width=w;acv.height=h}const a=actx;
+ a.globalCompositeOperation='source-over';a.clearRect(0,0,w,h);a.fillStyle=`rgba(5,3,15,${.5*Math.min(1,k*1.5)})`;a.fillRect(0,0,w,h);a.globalCompositeOperation='destination-out';mdraw(a,mimg);x.drawImage(acv,0,0);
+ a.globalCompositeOperation='source-over';a.clearRect(0,0,w,h);drawAura(a,w,h,P,t,k*1.15,C);
+ a.globalCompositeOperation='lighter';const rim=tintMask(mimg,P.aura.hex,Math.max(3,Math.round(mimg.width/45)));a.globalAlpha=Math.min(1,k);for(let i=0;i<2;i++){a.save();a.translate(w/2,h*.45);const sc=1.03+i*.04+.01*Math.sin(t*3);a.scale(sc,sc);a.translate(-w/2,-h*.45);mdraw(a,rim);a.restore()}a.globalAlpha=1;
+ a.globalCompositeOperation='destination-out';a.globalAlpha=.82;mdraw(a,mimg);a.globalAlpha=1;a.globalCompositeOperation='source-over';x.drawImage(acv,0,0)}
 addEventListener('resize',()=>{if(!stage.hidden)size()});
-function drawSrc(x,w,h){if(!src)return;const[sw,sh]=srcDims();const s=Math.max(w/sw,h/sh),dw=sw*s,dh=sh*s;x.save();if(mirror){x.translate(w,0);x.scale(-1,1)}x.drawImage(src,(w-dw)/2,(h-dh)/2,dw,dh);x.restore()}
+function drawSrc(x,w,h){if(src)drawCover(x,src,w,h)}
 function measure(){try{drawSrc(sx,48,64);const d=sx.getImageData(0,0,48,64).data;let r=0,g=0,b=0,n=d.length/4;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2]}r/=n;g/=n;b/=n;
   const L=(.2126*r+.7152*g+.0722*b)/255*100;const rb=(r+1)/(b+1);const K=Math.round(clamp(6500/Math.pow(rb,.9),1800,12000)/10)*10;const sum=r+g+b+1;liveStats={L,K,r:r/sum*100,g:g/sum*100,b:b/sum*100}}catch(e){}}
 
 function openStage(){stage.hidden=false;try{history.pushState({s:screen,stage:1},'')}catch(e){}size();phase='idle';srcPts=null;det.lm=null;$('#fallback').hidden=true;$('#scanBtn').hidden=true;$('#stProg').style.width='0';$('#stStatus').textContent='Camera shuru ho raha hai…';src=null;cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);loadDetector();startCam()}
-async function startCam(){$('#fallback').hidden=true;
+let facing=store.get('hkv_cam','environment');
+async function startCam(){$('#fallback').hidden=true;stopCam();
  try{if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('none');
-  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:960}},audio:false});
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:facing},width:{ideal:1280},height:{ideal:960}},audio:false})}
+  catch(e){stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:1280},height:{ideal:960}},audio:false})}
   if(stage.hidden){stopCam();return}
-  vid.srcObject=stream;await vid.play();src=vid;mirror=true;ready()}
+  const st=stream.getVideoTracks()[0].getSettings?.()||{};
+  vid.srcObject=stream;await vid.play();src=vid;srcPts=null;det.lm=null;mirror=(st.facingMode||facing)==='user';ready()}
  catch(e){if(!stage.hidden){$('#fallback').hidden=false;$('#stStatus').textContent=''}}}
 $('#retryCam').addEventListener('click',startCam);
-function ready(){$('#fallback').hidden=true;phase='preview';presentSince=0;$('#scanBtn').hidden=false;$('#scanBtn').disabled=true;$('#stStatus').textContent='Insaan dhoondh rahe hain…';Snd.beep(660,.15,.12)}
+$('#flipCam').addEventListener('click',()=>{if(phase==='scan')return;facing=facing==='user'?'environment':'user';store.set('hkv_cam',facing);Snd.beep(700,.08,.1);$('#stStatus').textContent='Camera badal raha hai…';$('#scanBtn').hidden=true;startCam()});
+function ready(){$('#flipCam').disabled=false;$('#fallback').hidden=true;phase='preview';presentSince=0;$('#scanBtn').hidden=false;$('#scanBtn').disabled=true;$('#stStatus').textContent='Insaan dhoondh rahe hain…';Snd.beep(660,.15,.12)}
 function useImage(file){const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');const s=Math.min(1,960/Math.max(im.width,im.height));c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);src=c;mirror=false;srcPts=null;det.lm=null;ready()};im.src=fr.result};fr.readAsDataURL(file)}
 $('#capIn').addEventListener('change',e=>{if(e.target.files[0])useImage(e.target.files[0]);e.target.value=''});
 $('#galIn').addEventListener('change',e=>{if(e.target.files[0])useImage(e.target.files[0]);e.target.value=''});
@@ -528,7 +560,7 @@ function closeStage(){cancelAnimationFrame(raf);stopCam();stage.hidden=true;phas
 $('#stClose').addEventListener('click',()=>history.back());
 
 $('#scanBtn').addEventListener('click',async()=>{if(phase!=='preview'||$('#scanBtn').disabled)return;Snd.init();Snd.startDrone();
- R=reading(cur.name,cur.dob,cur.gen);phase='scan';t0=performance.now();parts=[];ignited=CHAKRAS.map(()=>-1);flags={};shot=null;$('#scanBtn').hidden=true;
+ R=reading(cur.name,cur.dob,cur.gen);phase='scan';t0=performance.now();parts=[];ignited=CHAKRAS.map(()=>-1);flags={};shot=null;$('#scanBtn').hidden=true;$('#flipCam').disabled=true;
  try{wake=await navigator.wakeLock?.request('screen')}catch(e){}
  vib(40);Snd.droneLevel(.26);Snd.whoosh(1.4,.3);Snd.sweep(80,600,1.4,.08)});
 
@@ -559,7 +591,7 @@ function tick(now){raf=requestAnimationFrame(tick);const w=cv.width,h=cv.height,
  x.save();x.font=`${11*f}px "IBM Plex Mono",monospace`;x.fillStyle='rgba(88,240,226,.9)';x.shadowColor='rgba(88,240,226,.8)';x.shadowBlur=6*f;
  const lx=bm+4*f,ly=top+bl+20*f,lh=16*f;
  const aiTxt=det.state==='ready'?(isP?`LOCK ${Math.round(det.conf*100)}%`:'SEARCHING'):det.state==='loading'?'LOADING':'OFF';
- [`BIO-FIELD  7.83 Hz`,`LUMINANCE  ${liveStats.L.toFixed(1)}%`,`COLOR TEMP ${liveStats.K} K`,`SPECTRUM   R${liveStats.r.toFixed(0)} G${liveStats.g.toFixed(0)} B${liveStats.b.toFixed(0)}`,`BODY FIELD ${aiTxt}`].forEach((s,i)=>x.fillText(s,lx,ly+i*lh));
+ [`BIO-FIELD  7.83 Hz`,`LUMINANCE  ${liveStats.L.toFixed(1)}%`,`COLOR TEMP ${liveStats.K} K`,`SPECTRUM   R${liveStats.r.toFixed(0)} G${liveStats.g.toFixed(0)} B${liveStats.b.toFixed(0)}`,`BODY FIELD ${aiTxt}`,`FACE GRID  ${faceOn(now)?'468 PTS':face.state==='ready'?'SEARCHING':'——'}`].forEach((s,i)=>x.fillText(s,lx,ly+i*lh));
  x.textAlign='right';x.fillStyle='rgba(245,191,79,.95)';x.shadowColor='rgba(245,191,79,.8)';
  const scanPct=phase==='scan'?clamp(tt/T*100,0,100):0;
  [`HKV ENGINE v6`,`ZONES 16/16`,`SCAN ${scanPct.toFixed(0)}%`,phase==='scan'&&R?`SIG ${R.id}`:'SIG ——',phase==='scan'&&tt>9.4&&R?`FREQ ${R.freq} Hz`:''].forEach((s,i)=>x.fillText(s,w-lx,ly+i*lh));x.restore();
@@ -571,12 +603,15 @@ function tick(now){raf=requestAnimationFrame(tick);const w=cv.width,h=cv.height,
   if(btn.disabled===rdy){btn.disabled=!rdy;if(rdy){Snd.beep(990,.12,.12);vib(25)}}
   const st=det.state==='failed'?'Kandhe aur chehra frame mein rakh ke SCAN dabaayein':det.state!=='ready'?'Bio-field sensor calibrate ho raha hai…':isP?'Insaan detect hua. SCAN dabaayein':'Koi insaan nahi dikha. Frame mein aayein';
   const se=$('#stStatus');if(se.textContent!==st)se.textContent=st;
+  if(isP&&maskOn(now)){x.save();x.globalCompositeOperation='lighter';x.globalAlpha=.35+.15*Math.sin(ts*3);drawCover(x,tintMask(mcv,'#58f0e2',4),w,h);x.restore()}
   P.forEach((p,i)=>drawChakraDot(x,p.x,p.y,CHAKRAS[i].hex,isP?.5:.18,ts,m*.02));
  }
+ // face mesh points (real 468-point face scan)
+ if(faceOn(now)&&phase!=='done'){const[sw,sh]=srcDims();x.save();x.fillStyle=phase==='scan'?'rgba(245,191,79,.75)':'rgba(88,240,226,.6)';const st_=phase==='scan'?2:4;for(let i=0;i<face.lm.length;i+=st_){const q=mapPt(face.lm[i].x*sw,face.lm[i].y*sh,w,h);x.fillRect(q.x-.8*f,q.y-.8*f,1.6*f,1.6*f)}x.restore()}
 
  if(phase==='scan'&&R){
   const bp=clamp((tt-1.4)/7.9,0,1),beamY=lerp(h*.97,h*.06,bp);
-  drawAura(x,w,h,R,ts,clamp((tt-9.2)/1.6,0,1)*(1+.15*Math.sin(ts*6)),C);
+  {const ak=clamp((tt-9.2)/1.6,0,1)*(1+.15*Math.sin(ts*6));if(maskOn(now))auraBehind(x,w,h,R,ts,ak,C,(a,img)=>drawCover(a,img,w,h),mcv);else drawAura(x,w,h,R,ts,ak,C)}
   if(tt>10.2&&tt<11.8){const sk=Math.sin((tt-10.2)/1.6*Math.PI)*(.25+R.nl*.18);x.save();for(let i=0;i<10;i++){const px=C.x+Math.sin(ts*.7+i*2.3)*C.rx*.9,py=C.y-C.ry*.6+i*C.ry*.13+Math.cos(ts+i)*20*f,rr=m*.2;const g=x.createRadialGradient(px,py,0,px,py,rr);g.addColorStop(0,`rgba(40,40,52,${sk*.7})`);g.addColorStop(1,'rgba(40,40,52,0)');x.fillStyle=g;x.fillRect(px-rr,py-rr,rr*2,rr*2)}x.restore()}
   if(bp>0&&bp<1){x.save();x.globalCompositeOperation='lighter';const bh=140*f;const g=x.createLinearGradient(0,beamY-bh,0,beamY+bh*.3);g.addColorStop(0,'rgba(88,240,226,0)');g.addColorStop(.85,'rgba(88,240,226,.28)');g.addColorStop(1,'rgba(88,240,226,0)');x.fillStyle=g;x.fillRect(0,beamY-bh,w,bh*1.3);x.fillStyle='rgba(200,255,250,.95)';x.shadowColor='#58f0e2';x.shadowBlur=24*f;x.fillRect(0,beamY-1.5*f,w,3*f);
    for(let i=0;i<w;i+=12*f){if(Math.random()<.25){x.fillStyle=`rgba(88,240,226,${Math.random()*.8})`;x.fillRect(i,beamY-Math.random()*40*f,2*f,2*f)}}x.restore()}
@@ -598,19 +633,20 @@ function tick(now){raf=requestAnimationFrame(tick);const w=cv.width,h=cv.height,
   if(tt>=T){phase='done';cancelAnimationFrame(raf);
    const base=document.createElement('canvas');base.width=720;base.height=960;drawSrc(base.getContext('2d'),720,960);
    const bpts=srcPts?ptsFor(720,960).map(p=>[p.x/720,p.y/960]):null;
+   if(maskOn(now)){resMaskNext=document.createElement('canvas');resMaskNext.width=720;resMaskNext.height=960;drawCover(resMaskNext.getContext('2d'),mcv,720,960)}else resMaskNext=null;
    stopCam();stage.hidden=true;
    finishResult(base,true,bpts,shot,true)}
  }
 }
 
 /* ================= RESULT ================= */
-let resBase=null,resPts=null,resShot=null;
+let resBase=null,resPts=null,resShot=null,resMask=null,resMaskNext=null;
 function statusOf(v){return v<50?['Block','#ff5a5a']:v<65?['Kamzor','#ff8f3d']:v<88?['Santulit','#3ddc84']:['Ati-sakriya','#ffc53d']}
 function basePts(){return resPts?resPts.map(([a,b])=>({x:a*720,y:b*960})):CK_Y.map(f=>({x:360,y:960*f}))}
 function baseCtr(p){if(!resPts)return null;return{x:p[3].x,y:(p[6].y+p[0].y)/2,rx:300,ry:Math.max((p[0].y-p[6].y)*.62,300),hx:p[6].x,hy:p[6].y}}
-function renderAuraFrame(x,t,dots){x.globalCompositeOperation='source-over';x.drawImage(resBase,0,0,720,960);x.fillStyle='rgba(10,4,30,.2)';x.fillRect(0,0,720,960);const p=basePts();drawAura(x,720,960,R,t,1,baseCtr(p));if(dots)p.forEach((q,i)=>drawChakraDot(x,q.x,q.y,CHAKRAS[i].hex,.85,t,22))}
+function renderAuraFrame(x,t,dots){x.globalCompositeOperation='source-over';x.drawImage(resBase,0,0,720,960);x.fillStyle='rgba(10,4,30,.2)';x.fillRect(0,0,720,960);const p=basePts();if(resMask)auraBehind(x,720,960,R,t,1,baseCtr(p),(a,img)=>a.drawImage(img,0,0,720,960),resMask);else drawAura(x,720,960,R,t,1,baseCtr(p));if(dots)p.forEach((q,i)=>drawChakraDot(x,q.x,q.y,CHAKRAS[i].hex,.85,t,22))}
 function finishResult(base,save,pts,sh,fromStage){
- const P=reading(cur.name,cur.dob,cur.gen);R=P;resBase=base;resPts=pts;
+ const P=reading(cur.name,cur.dob,cur.gen);R=P;resBase=base;resPts=pts;resMask=fromStage?resMaskNext:null;resMaskNext=null;
  if(save)saveHist(base,pts);
  if(!sh){sh=document.createElement('canvas');sh.width=720;sh.height=960;renderAuraFrame(sh.getContext('2d'),2,true)}resShot=sh;
  Snd.droneLevel(.12);
