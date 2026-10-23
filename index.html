@@ -335,7 +335,6 @@ const CHAKRAS=[
  {n:'Sahasrara',en:'Crown',hi:'सहस्रार',hex:'#c27dff',area:'Adhyatm, ishwar se judaav',up:['Roz 10 minute maun aur dhyan rakhein','"Hare Krishna" mahamantra ki 1 maala japein']}];
 const NAZAR=[{n:'Nahi',hi:'',c:'#3ddc84'},{n:'Halka',hi:'हल्का',c:'#ffc53d'},{n:'Madhyam',hi:'मध्यम',c:'#ff8f3d'},{n:'Teevra',hi:'तीव्र',c:'#ff5a5a'}];
 const SIGNS=['Kaam bante-bante ruk jaana','Bina wajah thakaan aur aalas','Ghar mein chhoti baaton par kalesh','Neend ke baad bhi mann bhaari rehna','Paisa aate hi kharch ho jaana','Mann mein achanak bechaini','Nayi cheez jaldi kharab hona','Doosron ki baaton ka zyada asar hona'];
-const NAZAR_UP=['Shaam ko ghar mein kapoor jalaayein','Hafte mein 2 baar paani mein sendha namak daal kar snaan karein','Shanivaar ko mukhya dwaar par nimbu-mirchi lagaayein','Laal mirch, rai aur namak se 7 baar nazar utaar kar aag mein daalein','Mangalvaar aur Shanivaar Hanuman Chalisa ka paath karein'];
 const GRAH={1:['Surya','Purv (East)','Kesariya, Sunehri','Ravivaar'],2:['Chandra','Vayavya (North-West)','Safed, Chaandi','Somvaar'],3:['Guru','Ishaan (North-East)','Peela','Guruvaar'],4:['Rahu','Nairutya (South-West)','Neela, Grey','Shanivaar'],5:['Budh','Uttar (North)','Hara','Budhvaar'],6:['Shukra','Agneya (South-East)','Gulabi, Safed','Shukravaar'],7:['Ketu','Ishaan (North-East)','Halka Grey, Multicolor','Mangalvaar'],8:['Shani','Paschim (West)','Gehra Neela','Shanivaar'],9:['Mangal','Dakshin (South)','Laal','Mangalvaar']};
 const reduce=n=>{while(n>9)n=String(n).split('').reduce((a,b)=>a+ +b,0);return n||9};
 
@@ -364,10 +363,10 @@ function reading(name,dob,gen){
   `${CHAKRAS[low2].n} chakra kamzor hai. Ise santulit karna zaroori hai.`,
   `Nazar dosh ${NAZAR[nl].n.toLowerCase()} star par mila. Aapki ${neg}% urja negative layer mein fansi hai.`];
  if(shield<60)kami.push(`Suraksha kavach sirf ${shield}% hai. Bahari negativity jaldi asar karti hai.`);
- const upay=[...NAZAR_UP.slice(0,[1,2,3,5][nl]),...CHAKRAS[low].up,CHAKRAS[low2].up[0],`Ghar ki ${g[1]} disha saaf, roshan aur kabaad se mukt rakhein. Yeh aapki shubh disha hai.`];
  const id='HKV-'+sd[0].toString(16).slice(0,4).toUpperCase()+'-'+(sd[1]%900+100);
  const freq=ri(402,568),spread=(1.3+energy/100*2.1).toFixed(1);
- return {name:name.trim(),dob,gen,id,aura:AURAS[pi],aura2:AURAS[si],ch,weak:low,nl,nz,energy,neg,pos:100-neg,shield,prana,shanti,karmic,signs,mulank,bhagyank,g,kami,upay,freq,spread,num:numerology(name,dob,gen)};
+ const P={name:name.trim(),dob,gen,id,aura:AURAS[pi],aura2:AURAS[si],ch,weak:low,nl,nz,energy,neg,pos:100-neg,shield,prana,shanti,karmic,signs,mulank,bhagyank,g,low2,kami,freq,spread,num:numerology(name,dob,gen)};
+ P.upay=remedies(P,key);return P;
 }
 
 /* ================= CHEIRO / CHALDEAN NUMEROLOGY ================= */
@@ -378,21 +377,117 @@ const FRIENDS={1:[[1,2,3,5,9],[6,8]],2:[[1,2,3,5],[4,8,9]],3:[[1,2,3,5,7,9],[6]]
 const LOSHU_REM={1:'Ugte Surya ko jal, taambe ka kada pehnein',2:'Chaandi ke glass mein paani piyein, Somvaar Shiv ko jal',3:'Mathe par haldi ya kesar ka tilak, Guruvaar peela daan',4:'Ghar ke South-West mein bhaari cheez rakhein, Durga path',5:'Hara rumaal paas rakhein, Budhvaar gaay ko hara chara',6:'Safed vastra aur itra, Shukravaar Lakshmi pooja',7:'Ganesh pooja, Mangalvaar kambal daan',8:'Shanivaar sarson ke tel ka deepak jalaayein',9:'Mangalvaar Hanuman ji ko laal chola chadhaayein'};
 const KUA_DIR={1:['SE','E','S','N'],2:['NE','W','NW','SW'],3:['S','N','SE','E'],4:['N','S','E','SE'],6:['W','NE','SW','NW'],7:['NW','SW','NE','W'],8:['SW','NW','W','NE'],9:['E','SE','N','S']};
 const KUA_LBL=['Dhan (Sheng Chi)','Swasthya (Tien Yi)','Rishte (Nien Yen)','Shanti (Fu Wei)'];
+const PL={1:'Surya',2:'Chandra',3:'Guru',4:'Rahu',5:'Budh',6:'Shukra',7:'Ketu',8:'Shani',9:'Mangal'};
+const RATNA={1:['Manik (Ruby)','Garnet'],2:['Moti (Pearl)','Moonstone'],3:['Pukhraj (Yellow Sapphire)','Sunela (Citrine)'],4:['Gomed (Hessonite)','Orange Zircon'],5:['Panna (Emerald)','Peridot'],6:['Heera (Diamond)','Opal / White Zircon'],7:["Lehsunia (Cat's Eye)",'Tiger Eye'],8:['Neelam (Blue Sapphire)','Amethyst'],9:['Moonga (Red Coral)','Carnelian']};
+const CYCLE={1:'Nayi shuruaat, naye kaam aur bade faisle',2:'Saajhedaari, dhairya aur rishton par dhyan',3:'Rachnatmakta, prachaar aur nayi vidya',4:'Mehnat, anushasan aur neev majboot karna',5:'Badlav, yatra aur naye mauke',6:'Parivaar, ghar aur zimmedaari',7:'Aatm-chintan, adhyatm aur research',8:'Dhan, power aur karm ka phal',9:'Purane ka ant, safai aur daan'};
+const PLANES=[
+ ['Mental Plane (Vichaar)',[4,9,2],'Tez dimaag, achhi yaad-dasht aur yojana banane ki kshamta.','Vichaar bikhre rehte hain. Focus aur yaad-dasht par kaam zaroori.'],
+ ['Emotional Plane (Bhaav)',[3,5,7],'Bhaavnaon mein santulan aur adhyatmik samajh.','Bhaavnaayein andar dabana, mann ki baat kehne mein jhijhak.'],
+ ['Practical Plane (Karm)',[8,1,6],'Zameen se jude, bhautik safalta aur vyavastha.','Yojanaayein zameen par utaarne mein dikkat.'],
+ ['Thought Plane (Yojana)',[4,3,8],'Planning aur strategy mein mahir.','Bina soche jaldi kadam uthaane ki aadat.'],
+ ['Will Plane (Ichha-shakti)',[9,5,1],'Majboot ichha-shakti, jo thaan lein woh karte hain.','Ichha-shakti kamzor, kaam beech mein chhoot jaate hain.'],
+ ['Action Plane (Kriya)',[2,7,6],'Kaam ko anjaam tak le jaane wali urja.','Shuruaat karne mein aalas aur der.'],
+ ['Golden Yog (Raj Yog)',[4,5,6],'Unnati aur safalta ka shubh yog.',null],
+ ['Silver Yog (Dhan Yog)',[2,5,8],'Sampatti aur sthirta ka yog.',null]];
+const REP={1:['Apni baat achhe se rakhte hain','Zyada bolna, gussa chhupaana mushkil'],2:['Gehri samvedansheelta, log aap par bharosa karte hain','Jaldi aahat hona, mood swings'],3:['Kalpanasheel aur creative','Zyada sochna, kalpana mein khoye rehna'],4:['Mehnati aur vyavasthit','Kaam ka bojh aur jidd'],5:['Josh aur tez gati','Jaldbaazi aur asthirta'],6:['Parivaar ke prati samarpit','Zyada chinta aur control'],7:['Gehri samajh, anubhav se seekh','Nuksaan ke baad hi seekh milna'],8:['Dhan sambhalne ki samajh','Zid aur akelaapan'],9:['Uchch aadarsh aur seva bhaav','Aalochna aur jaldi gussa']};
+const LUCKY_C=new Set([1,3,5,6,10,14,15,19,21,23,24,27,32,33,37,41,42,45,46,50,51]);
+const chal=w=>[...String(w).toUpperCase().replace(/[^A-Z]/g,'')].reduce((a,c)=>a+(CHALDEAN[c]||0),0);
+function nameSugg(name,mul){const fr=FRIENDS[mul][0],words=name.trim().split(/\s+/),f=words[0],restV=chal(words.slice(1).join(''));const out=[],seen=new Set();
+ const tryC=c=>{if(seen.has(c.toLowerCase()))return;seen.add(c.toLowerCase());const comp=chal(c)+restV;let cc=comp;while(cc>52)cc-=9;if(fr.includes(reduce(comp))&&LUCKY_C.has(cc))out.push({n:[c,...words.slice(1)].join(' '),comp,single:reduce(comp)})};
+ for(let i=1;i<f.length;i++)if(/[a-z]/i.test(f[i]))tryC(f.slice(0,i+1)+f[i].toLowerCase()+f.slice(i+1));
+ ['a','h','e','y','i'].forEach(ch=>tryC(f+ch));
+ for(let i=1;i<f.length;i++)if(/[bcdgjkpst]/i.test(f[i-1])&&!/h/i.test(f[i]))tryC(f.slice(0,i)+'h'+f.slice(i));
+ return out.slice(0,3)}
 function numerology(name,dob,gen){
- const letters=name.toUpperCase().replace(/[^A-Z]/g,'');const comp=[...letters].reduce((a,c)=>a+(CHALDEAN[c]||0),0)||1;
- let c=comp;while(c>52)c-=9;const single=reduce(comp);
+ const comp=chal(name)||1;let c=comp;while(c>52)c-=9;const single=reduce(comp);
  const cm=c>=10?CHEIRO[c]:null;
  const y=+dob.slice(0,4),mo=+dob.slice(5,7),d=+dob.slice(8,10);
  const mul=reduce(d),bhag=reduce(dob.replace(/\D/g,'').split('').reduce((a,b)=>a+ +b,0));
- const [fr,en]=FRIENDS[mul];const compat=fr.includes(single)?['Shubh','#3ddc84','Naamank aapke mulank ka mitra hai.']:en.includes(single)?['Sudhaar chahiye','#ff5a5a','Naamank aapke mulank se mel nahi khaata. Naam ki spelling mein sudhaar se urja badh sakti hai.']:['Saamaanya','#ffc53d','Naamank aur mulank ka mel saamaanya hai. Halka sudhaar faydemand rahega.'];
+ const [fr,en]=FRIENDS[mul];
+ const rel=n=>fr.includes(n)?'mitra':en.includes(n)?'shatru':'sam';
+ const compat=fr.includes(single)?['Shubh','#3ddc84','Naamank aapke mulank ka mitra hai.']:en.includes(single)?['Sudhaar chahiye','#ff5a5a','Naamank aapke mulank se mel nahi khaata. Naam ki spelling mein sudhaar se urja badh sakti hai.']:['Saamaanya','#ffc53d','Naamank aur mulank ka mel saamaanya hai. Halka sudhaar faydemand rahega.'];
+ const dc=rel(bhag),dcTxt={mitra:'Driver aur Conductor mitra hain. Mehnat ka phal jaldi aur aasaani se milta hai.',sam:'Driver aur Conductor sam hain. Safalta milti hai, par lagataar mehnat se.',shatru:'Driver aur Conductor mein takraav hai. Mann kuch chahta hai, bhagya kuch aur dikhata hai. Upay se santulan zaroori.'}[dc];
  const digits=dob.replace(/\D/g,'').split('').map(Number).filter(n=>n>0);digits.push(bhag);if(d>9)digits.push(mul);
  const cnt={};for(let i=1;i<=9;i++)cnt[i]=0;digits.forEach(n=>cnt[n]++);
  const missing=Object.keys(cnt).map(Number).filter(n=>!cnt[n]);
+ const planes=PLANES.map(([nm,ns,good,bad])=>{const has=ns.filter(n=>cnt[n]).length;return has===3?{nm,ok:true,t:good}:has===0&&bad?{nm,ok:false,t:bad}:null}).filter(Boolean);
+ const reps=Object.keys(cnt).map(Number).filter(n=>cnt[n]>=2).map(n=>({n,k:cnt[n],t:cnt[n]===2?REP[n][0]:REP[n][1]}));
  let ky=y;if(mo<2||(mo===2&&d<4))ky--;const r=reduce(String(ky).slice(2).split('').reduce((a,b)=>a+ +b,0));
  let kua;if(gen==='f'){kua=reduce(ky<2000?5+r:6+r);if(kua===5)kua=8}else{kua=ky<2000?10-r:9-r;if(kua<=0)kua+=9;kua=reduce(kua);if(kua===5)kua=2}
- const py=reduce(d+mo+2+0+2+6);
- return {comp,single,cm,singleM:SINGLE_M[single],compat,cnt,missing,kua,kuaDirs:KUA_DIR[kua],py,mul,bhag};
+ const now=new Date(),py=reduce(d+mo+reduce(2026)),pm=reduce(py+now.getMonth()+1),pd=reduce(pm+now.getDate());
+ const luckyDates=[];for(let i=1;i<=31;i++)if(fr.includes(reduce(i)))luckyDates.push(i);
+ const sugg=fr.includes(single)?[]:nameSugg(name,mul);
+ return {comp,single,cm,singleM:SINGLE_M[single],compat,cnt,missing,planes,reps,kua,kuaDirs:KUA_DIR[kua],py,pm,pd,mul,bhag,dc,dcTxt,
+  mulP:PL[mul],bhagP:PL[bhag],ratna:RATNA[mul],bhagRatna:RATNA[bhag],lucky:fr,unlucky:en,luckyDates:luckyDates.slice(0,10),sugg};
 }
+
+/* ================= PERSONAL REMEDY ENGINE =================
+   Every person gets a different set: picks depend on their weak chakras, nazar level,
+   ruling planet, missing Lo Shu numbers, Kua directions and personal year, and the
+   exact choice inside each pool is seeded by their name + birth date. */
+const DIRN={N:'Uttar (North)',NE:'Ishaan (North-East)',E:'Purv (East)',SE:'Agneya (South-East)',S:'Dakshin (South)',SW:'Nairutya (South-West)',W:'Paschim (West)',NW:'Vayavya (North-West)'};
+const UP_NAZAR=['Phitkari ka ek tukda laal kapde mein baandh kar mukhya dwaar ke upar taangein, har Shanivaar naya karein',
+ 'Gaay ke gobar ke kande par loban aur guggal jala kar shaam ko ghar ke har kamre mein dhoop dikhayein, shuruaat mukhya dwaar se',
+ '7 saabut laal mirch, ek mutthi rai aur namak ko sir se 7 baar ulta ghuma kar jalate koyle par daalein, Mangalvaar ya Shanivaar shaam',
+ 'Ek saabut naariyal sir se 7 baar utaar kar bahte paani mein pravahit karein, peeche mud kar na dekhein',
+ 'Nahaane ke paani mein ek mutthi sendha namak aur 2 boond neem tel, hafte mein 2 baar, 21 din tak',
+ 'Mangalvaar ko kaala dhaaga Hanuman ji ke charnon se chhua kar {pair} pair mein baandhein',
+ 'Ghar ke chaaron kono mein 2-2 kapoor ki tikiyan 3 din rakhein, chauthe din ghar ke bahar visarjit karein',
+ 'Kaanse ki katori mein sarson ka tel daal kar usme apna chehra dekhein, phir woh tel Shani mandir mein daan karein (Shanivaar)',
+ 'Neem ki 7 pattiyan, 1 laung aur thoda loban jala kar uska dhuan sir se pair tak ghumayein',
+ 'Mukhya dwaar ke bahar ki taraf Panchmukhi Hanuman ji ki chhoti tasveer lagaayein'];
+const UP_CHAKRA=[
+ ['Laal Jasper ya Garnet jeb mein rakhein, har Mangalvaar bahte paani se dho kar dhoop dikhayein','Raat sone se pehle pair ke talvon par til ke tel se 7 minute malish','Roz subah 3 minute Malasana mein baith kar "LAM" ka {n} baar jaap','Ghar ke South-West kone mein mitti ke ghade mein laal mitti aur 4 laal chandan ki lakdiyan rakhein','Hafte mein 3 din bhojan mein chukandar, gaajar aur gud shaamil karein','Subah ki os par nange pair 21 kadam chalein, phir dharti ko pranaam'],
+ ['Chaandi ke glass mein raat bhar rakha paani subah khaali pet piyein','Carnelian patthar naabhi ke neeche 10 minute rakh kar "VAM" ka {n} baar jaap','Somvaar ko Shivling par doodh-mishrit jal aur 2 safed phool','Narangi rang ka rumaal roz paas rakhein, khaas kar bahar jaate samay','Hafte mein ek baar nadi, jheel ya fountain ke paas 15 minute shaant baithein','North-West mein safed porcelain ki katori mein paani bhar kar rakhein, roz badlein'],
+ ['Ugte Surya ko taambe ke lote mein laal phool aur gud daal kar jal, "Om Ghrinih Suryaya Namah" {n} baar','Citrine patthar office desk ke daayin taraf rakhein','Raat sone se pehle naabhi par 3 boond sarson ka tel','Kapalbhati pranayam 3 round, har round 30 baar, subah khaali pet','Guruvaar ko chane ki daal aur haldi mandir mein daan','Roz bhojan mein haldi, adrak aur kela, saath mein "RAM" ka {n} baar jaap'],
+ ['Rose Quartz ya Green Aventurine sone ki jagah ke paas, har Shukravaar saaf paani se dhoyein','21 din tak roz raat 3 logon ke liye mann se shukriya likhein','Ghar ke Purv mein tulsi ka paudha, roz paani khud dein','Budhvaar ko gaay ko bhigoyi hui hari moong khilayein','Anahata mudra mein 7 minute baith kar "YAM" ka {n} baar jaap','Kisi purane gile-shikve wale insaan ko mann se maaf karke "Om Shanti" 11 baar'],
+ ['Aquamarine ya Lapis Lazuli Budhvaar se gale mein ya jeb mein rakhein','21 din subah gunguna paani, shahad aur mulethi','Gale par dhyan rakh kar "HAM" ka {n} baar jaap, saath mein 5 minute Ujjayi pranayam','Budhvaar ko Ganesh ji ko hari elaichi aur kaanse ke bartan se jal','Roz 5 minute kuch bhi zor se padhein ya gaayein, apni awaaz sunein','Ghar ke Paschim mein chhota fountain ya behte paani ki tasveer'],
+ ['Amethyst takiye ke neeche rakhein, poornima ki raat chandni mein charge karein','Trataka: diye ki lau ko 3 minute bina palak jhapkaye dekhein, phir bhrumadhya par dhyan','Guruvaar se shuru karke roz mathe par chandan aur kesar ka tilak','"OM" ka {n} baar uchcharan, phir Bhramari pranayam 7 baar','Sone se 1 ghanta pehle phone band, Ishaan kone mein ek diya','Raat ko 5 badam bhigo kar subah khayein, sapnon ki diary rakhein'],
+ ['Clear Quartz ka gola ghar ke Ishaan mein rakhein, roz subah ek baar chhooein','Brahma muhurat (4 se 6 baje) mein 11 minute maun dhyan','"Hare Krishna" mahamantra ki {m} maala, Ekadashi ko vishesh','Ravivaar raat sir ke beech (Sahasrara) par shuddh ghee ki 2 boond','Har Ekadashi ya Amavasya ko mandir mein seva ya bhojan daan','Somvaar aur Guruvaar ko safed ya baingani vastra pehnein']];
+const UP_GRAH={1:[['Ravivaar ko gehu aur gud ka daan','Ravivaar subah Aditya Hridaya Stotra ka path','Taambe ka kada daayin haath mein'],'Om Hraam Hreem Hraum Sah Suryaya Namah','Ravivaar'],
+ 2:[['Somvaar ko chawal, doodh aur safed kapda daan','Poornima ko Chandra ko doodh-mishrit jal ka arghya','Chaandi ka chhalla kanishtha ungli mein'],'Om Shraam Shreem Shraum Sah Chandraya Namah','Somvaar'],
+ 3:[['Guruvaar ko kele ke ped mein haldi mila jal','Guruvaar ko chane ki daal aur haldi brahman ko daan','Roz mathe par kesar ka tilak'],'Om Graam Greem Graum Sah Gurave Namah','Guruvaar'],
+ 4:[['Shanivaar ko neela kapda aur sarson daan','Roz kaale kutte ko roti','Shanivaar ko Durga Saptashati ka ek adhyay'],'Om Bhraam Bhreem Bhraum Sah Rahave Namah','Shanivaar'],
+ 5:[['Budhvaar ko gaay ko hara chara','Budhvaar ko hari moong daan','Ganesh ji ko 21 durva Budhvaar ko'],'Om Braam Breem Braum Sah Budhaya Namah','Budhvaar'],
+ 6:[['Shukravaar ko safed mithai kanya ko','Roz chandan ya gulaab ka itra','Shukravaar ko Lakshmi ji ko kamal gatta'],'Om Draam Dreem Draum Sah Shukraya Namah','Shukravaar'],
+ 7:[['Mangalvaar ko kambal daan','Ganesh ji ko Mangalvaar ko laddoo','Kutte ko roz roti'],'Om Sraam Sreem Sraum Sah Ketave Namah','Mangalvaar'],
+ 8:[['Shanivaar ko peepal ke neeche sarson tel ka diya','Shanivaar ko kaale til aur urad daan','Mazdooron ya buzurgon ki madad'],'Om Praam Preem Praum Sah Shanaischaraya Namah','Shanivaar'],
+ 9:[['Mangalvaar ko Hanuman ji ko sindoor aur chola','Mangalvaar ko laal masoor daan','Bhai-bandhuon se rishte madhur rakhein, Mangalvaar ko unhe meetha dein'],'Om Kraam Kreem Kraum Sah Bhaumaya Namah','Mangalvaar']};
+const UP_LOSHU={1:['Uttar disha mein neeli katori mein paani aur ek chaandi ka sikka, roz paani badlein','Uttar mein chhota aquarium ya behte paani ki tasveer'],
+ 2:['Nairutya kone mein Rose Quartz ka joda (2 patthar)','Nairutya mein parivaar ki khushhaal tasveer, mitti ke rang ke frame mein'],
+ 3:['Purv disha mein 3 bamboo ke paudhe','Purv mein hara paudha aur subah ki dhoop andar aane dein'],
+ 4:['Agneya kone mein money plant, hare-neele gamle mein','Agneya mein 4 bamboo ka paudha, laal ribbon ke saath'],
+ 5:['Ghar ka beech ka hissa (Brahmasthan) khaali aur saaf rakhein, wahan ek crystal ball','Brahmasthan mein mitti ka diya roz shaam'],
+ 6:['Vayavya kone mein 6 rod wali metal wind chime','Vayavya mein pital ya chaandi ka kalash'],
+ 7:['Paschim disha mein 7 rod wali metal wind chime','Paschim mein pital ka kalash, usme chawal bhar kar'],
+ 8:['Ishaan kone mein crystal pyramid','Ishaan mein mitti ke 8 chhote diye ya peeli mitti ka gamla'],
+ 9:['Dakshin disha mein shaam ko laal bulb ya diya','Dakshin wall par ugte suraj ki laal-narangi painting']};
+const UP_PY={1:['Is saal har naya kaam Ravivaar ko shuru karein, pehle Surya ko jal dekar','Saal ka sankalp likh kar ghar ke Purv mein laal kapde mein rakhein'],
+ 2:['Is saal har Somvaar Shivling par kachcha doodh, rishton mein dhairya rakhein','Saajhedaari ke kaagaz Somvaar ya Shukravaar ko sign karein'],
+ 3:['Is saal koi nayi vidya seekhein, shuruaat Guruvaar ko','Guruvaar ko peele vastra aur maathe par haldi ka tilak'],
+ 4:['Is saal ek pakki dincharya banayein, har Shanivaar ghar se purani cheezein nikaalein','Har Shanivaar kaale kutte ko roti, Rahu shaanti ke liye'],
+ 5:['Is saal har yatra se pehle Ganesh ji ko durva','Zaroori kaam Budhvaar ko, jeb mein hara rumaal rakh kar'],
+ 6:['Is saal har Shukravaar Lakshmi ji ke saamne ghee ka diya','Mahine mein ek din parivaar ke saath mandir jaayein'],
+ 7:['Is saal roz 11 minute akele maun baithein aur journal likhein','Mangalvaar ko Ganesh ji ko laddoo, Ketu shaanti ke liye'],
+ 8:['Is saal har Shanivaar peepal ke neeche sarson tel ka diya, udhaar dene se bachein','Shanivaar ko buzurgon ki seva aur kaale til ka daan'],
+ 9:['Is saal purane karz, adhoore kaam aur jhagde khatam karein, Mangalvaar ko Hanuman Chalisa','Saal khatam hone se pehle ghar se 9 bekaar cheezein nikaal kar daan karein']};
+const UP_KUA=['Sote samay sir {d0} ki taraf rakhein, yeh aapki Dhan (Sheng Chi) disha hai','Kaam ya padhai karte samay mukh {d0} ki taraf rakhein','Thakaan ya bimaari mein {d1} ki taraf sir karke soyein, yeh aapki Swasthya disha hai','Ghar mein apna personal kona {d3} mein banayein, wahan roz 10 minute dhyan','Zaroori meeting ya deal mein {d0} ki taraf mukh karke baithein','Rishton mein mithaas ke liye bedroom mein {d2} wali deewar par joda tasveer'];
+function remedies(P,key){const r=sfc32(...cyrb128('HKV-UPAY|'+key));const pick=(a,n=1)=>{const c=[...a],o=[];while(o.length<n&&c.length)o.push(c.splice(Math.floor(r()*c.length),1)[0]);return o};
+ const N=P.num,cnt=()=>[11,21,27,51,108][Math.floor(r()*5)],D=N.kuaDirs.map(k=>DIRN[k]);
+ const fill=t=>t.replace('{n}',cnt()).replace('{m}',[1,3,5,11][Math.floor(r()*4)]).replace('{pair}',P.gen==='f'?'baayein':'daayein').replace('{d0}',D[0]).replace('{d1}',D[1]).replace('{d2}',D[2]).replace('{d3}',D[3]);
+ const out=[],add=(c,t,w)=>out.push({c,t:fill(t),w});
+ pick(UP_NAZAR,[1,1,2,3][P.nl]).forEach(t=>add('Nazar Shuddhi',t,`Nazar dosh ${P.nz}% (${NAZAR[P.nl].n})`));
+ pick(UP_CHAKRA[P.weak],2).forEach(t=>add(`${CHAKRAS[P.weak].n} Jaagran`,t,`${CHAKRAS[P.weak].n} sirf ${P.ch[P.weak]}% par`));
+ pick(UP_CHAKRA[P.low2],1).forEach(t=>add(`${CHAKRAS[P.low2].n} Santulan`,t,`${CHAKRAS[P.low2].n} ${P.ch[P.low2]}% par`));
+ const G=UP_GRAH[N.mul];add(`${N.mulP} Grah Shanti`,pick(G[0],1)[0],`Mulank ${N.mul} ka swami ${N.mulP}`);
+ add(`${N.mulP} Mantra`,`"${G[1]}" ka ${cnt()} baar jaap, ${G[2]} ko ${pick(['sooryoday ke 1 ghante ke andar','subah 6 se 7 baje ke beech','shaam ko diya jala kar'],1)[0]}`,`Aapka mantra, aapki sankhya`);
+ if(N.dc==='shatru'){const B=UP_GRAH[N.bhag];add(`${N.bhagP} Santulan`,pick(B[0],1)[0],`Driver ${N.mul} aur Conductor ${N.bhag} mein takraav`)}
+ pick(N.missing.filter(n=>UP_LOSHU[n]),2).forEach(n=>add(`Lo Shu ${n} Poorti`,pick(UP_LOSHU[n],1)[0],`Lo Shu grid mein ${n} gaayab`));
+ pick(UP_KUA,1).forEach(t=>add('Kua Disha',t,`Kua ank ${N.kua}`));
+ add(`Personal Year ${N.py}`,pick(UP_PY[N.py],1)[0],`2026 aapke liye Personal Year ${N.py}`);
+ add('Rang Chikitsa',`Apne doosre aura rang ${P.aura2.n} (${P.aura2.en}) ki koi ek cheez roz apne paas rakhein`,`Aura mein ${P.aura2.n} ki kami`);
+ if(N.sugg.length)add('Naam Urja',`Naam ki spelling "${N.sugg[0].n}" (naamank ${N.sugg[0].comp}/${N.sugg[0].single}) karne par vichaar karein`,`Naamank ${N.comp}/${N.single} mulank ${N.mul} se mel nahi khaata`);
+ return out}
 
 /* ================= SCIENCE SECTION ================= */
 const SCI=`<summary>Phone se aura scan kaise hota hai?</summary>
@@ -420,7 +515,7 @@ addEventListener('popstate',e=>{
  if(!stage.hidden){closeStage();return}
  const s=e.state&&e.state.s||'splash';show(s,false);if(s==='form')renderHist()});
 $$('[data-back]').forEach(b=>b.addEventListener('click',()=>history.back()));
-$('#startBtn').addEventListener('click',()=>{Snd.init();Snd.startDrone();Snd.bell(528,.3);show('form');renderHist();loadDetector()});
+$('#startBtn').addEventListener('click',()=>{Snd.init();Snd.bell(528,.3);show('form');renderHist();loadDetector()});
 
 let cur=null;
 $('#pform').addEventListener('submit',e=>{e.preventDefault();Snd.init();
@@ -599,7 +694,7 @@ function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=nul
 function closeStage(){cancelAnimationFrame(raf);stopCam();stage.hidden=true;phase='idle';Snd.droneLevel(.16)}
 $('#stClose').addEventListener('click',()=>history.back());
 
-$('#scanBtn').addEventListener('click',async()=>{if(phase!=='preview'||$('#scanBtn').disabled)return;Snd.init();Snd.startDrone();
+$('#scanBtn').addEventListener('click',async()=>{if(phase!=='preview'||$('#scanBtn').disabled)return;Snd.init();
  R=reading(cur.name,cur.dob,cur.gen);phase='scan';t0=performance.now();parts=[];ignited=CHAKRAS.map(()=>-1);flags={};shot=null;$('#scanBtn').hidden=true;$('#flipCam').disabled=true;
  try{wake=await navigator.wakeLock?.request('screen')}catch(e){}
  vib(40);Snd.droneLevel(.26);Snd.whoosh(1.4,.3);Snd.sweep(80,600,1.4,.08)});
@@ -750,44 +845,63 @@ function finishResult(base,save,pts,sh,fromStage){
    <ul class="list kami">${P.kami.map(k=>`<li>${esc(k)}</li>`).join('')}</ul>
   </div>
   <div class="card">
+   <p class="eyebrow">Vedic Ank Jyotish</p>
+   <div class="numtiles">
+    <div class="numtile"><b>${N.mul}</b><small>Mulank (Driver)</small></div>
+    <div class="numtile"><b>${N.bhag}</b><small>Bhagyank (Conductor)</small></div>
+    <div class="numtile"><b>${N.kua}</b><small>Kua Ank</small></div>
+   </div>
+   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-weight:700">${N.mulP} + ${N.bhagP}</span><span class="pill" style="color:${N.dc==='mitra'?'#3ddc84':N.dc==='sam'?'#ffc53d':'#ff5a5a'}">${N.dc==='mitra'?'Mitra':N.dc==='sam'?'Sam':'Takraav'}</span></div>
+   <p class="muted" style="font-size:14px">${N.dcTxt}</p>
+   <dl class="kv">
+    <dt>Swami grah</dt><dd>${N.mulP}</dd>
+    <dt>Ratna</dt><dd>${N.ratna[0]}</dd>
+    <dt>Upratna</dt><dd>${N.ratna[1]}</dd>
+    <dt>Shubh ank</dt><dd>${N.lucky.join(', ')}</dd>
+    <dt>Ashubh ank</dt><dd>${N.unlucky.join(', ')||'Koi nahi'}</dd>
+    <dt>Shubh tareekhein</dt><dd>${N.luckyDates.join(', ')}</dd>
+    <dt>Shubh rang</dt><dd>${P.g[2]}</dd>
+    <dt>Shubh din</dt><dd>${P.g[3]}</dd>
+    <dt>Shubh disha</dt><dd>${P.g[1]}</dd>
+   </dl>
+   <p class="muted" style="font-size:12px">Ratna dharan se pehle kundli zaroor dikhwaayein.</p>
+  </div>
+  <div class="card">
    <p class="eyebrow">Cheiro Ank Jyotish (Chaldean)</p>
    <div class="numtiles">
+    <div class="numtile"><b>${N.comp}</b><small>Compound</small></div>
+    <div class="numtile"><b>${N.single}</b><small>Naamank</small></div>
     <div class="numtile"><b>${N.mul}</b><small>Mulank</small></div>
-    <div class="numtile"><b>${N.bhag}</b><small>Bhagyank</small></div>
-    <div class="numtile"><b>${N.comp}/${N.single}</b><small>Naamank</small></div>
    </div>
    ${N.cm?`<div><p style="font-weight:700;color:var(--gold)">Ank ${N.comp}: ${N.cm[0]}</p><p class="muted" style="font-size:15px">${N.cm[1]}</p></div>`:''}
    <p class="muted" style="font-size:15px">Naamank ${N.single}: ${N.singleM}</p>
    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-weight:700">Naam aur Mulank ka mel</span><span class="pill" style="color:${N.compat[1]}">${N.compat[0]}</span></div>
    <p class="muted" style="font-size:14px">${N.compat[2]}</p>
+   ${N.sugg.length?`<p style="font-weight:700">Sujhaaye gaye naam</p><ul class="list upay">${N.sugg.map(s=>`<li><b>${esc(s.n)}</b> · ${s.comp}/${s.single}</li>`).join('')}</ul>`:''}
   </div>
   <div class="card">
    <p class="eyebrow">Lo Shu Grid</p>
    <div class="loshu">${[4,9,2,3,5,7,8,1,6].map(n=>`<span class="${N.cnt[n]?'has':'miss'}">${N.cnt[n]?String(n).repeat(Math.min(N.cnt[n],3)):n}</span>`).join('')}</div>
    <p style="font-weight:700">Gaayab ank: ${N.missing.join(', ')||'Koi nahi'}</p>
-   <ul class="list upay">${N.missing.slice(0,4).map(n=>`<li><b>${n}</b>: ${LOSHU_REM[n]}</li>`).join('')}</ul>
+   ${N.planes.length?`<ul class="list" style="padding-left:0;list-style:none">${N.planes.map(pl=>`<li><b style="color:${pl.ok?'#3ddc84':'#ff8f3d'}">${pl.ok?'✦':'✕'} ${pl.nm}</b><br><span class="muted" style="font-size:14px">${pl.t}</span></li>`).join('')}</ul>`:''}
+   ${N.reps.length?`<p style="font-weight:700">Dohraaye ank</p><ul class="list upay">${N.reps.map(rp=>`<li><b>${String(rp.n).repeat(rp.k)}</b>: ${rp.t}</li>`).join('')}</ul>`:''}
   </div>
   <div class="card">
-   <p class="eyebrow">Kua Ank aur Shubh Dishaayein</p>
+   <p class="eyebrow">Kua Disha aur Jeevan Chakra</p>
    <dl class="kv">
-    <dt>Kua ank</dt><dd>${N.kua}</dd>
-    ${N.kuaDirs.map((d,i)=>`<dt>${KUA_LBL[i]}</dt><dd>${d}</dd>`).join('')}
-    <dt>Personal Year 2026</dt><dd>${N.py}</dd>
+    ${N.kuaDirs.map((d,i)=>`<dt>${KUA_LBL[i]}</dt><dd>${DIRN[d]}</dd>`).join('')}
    </dl>
+   <div class="numtiles">
+    <div class="numtile"><b>${N.py}</b><small>Personal Year 2026</small></div>
+    <div class="numtile"><b>${N.pm}</b><small>Is Mahine</small></div>
+    <div class="numtile"><b>${N.pd}</b><small>Aaj</small></div>
+   </div>
+   <p class="muted" style="font-size:14px">Saal: ${CYCLE[N.py]}. Mahina: ${CYCLE[N.pm]}. Aaj: ${CYCLE[N.pd]}.</p>
   </div>
   <div class="card">
-   <p class="eyebrow">Grah aur Vastu</p>
-   <dl class="kv">
-    <dt>Grah</dt><dd>${P.g[0]}</dd>
-    <dt>Shubh disha</dt><dd>${P.g[1]}</dd>
-    <dt>Shubh rang</dt><dd>${P.g[2]}</dd>
-    <dt>Shubh din</dt><dd>${P.g[3]}</dd>
-    <dt>Shubh ank</dt><dd>${P.mulank}</dd>
-   </dl>
-  </div>
-  <div class="card">
-   <p class="eyebrow">Upay · Remedies</p>
-   <ul class="list upay">${P.upay.map(u=>`<li>${esc(u)}</li>`).join('')}</ul>
+   <p class="eyebrow">Aapke Vishesh Upay</p>
+   <p class="muted" style="font-size:13px">Yeh upay sirf aapke scan, chakra aur ank ke hisaab se chune gaye hain.</p>
+   <ol class="list upay" style="padding-left:22px">${P.upay.map(u=>`<li><span style="color:var(--gold);font-weight:700;font-size:13px">${esc(u.c)}</span><br>${esc(u.t)}<br><span class="muted" style="font-size:12px">${esc(u.w)}</span></li>`).join('')}</ol>
   </div>
   <div class="card cta">
    <p class="eyebrow" style="color:var(--gold)">Personal Consultation</p>
@@ -847,10 +961,12 @@ function pageBase(n,title){const c=document.createElement('canvas');c.width=PW;c
  x.textAlign='left';x.fillStyle=GOLD;x.font='44px Marcellus, Georgia, serif';x.fillText('HARE KRISHNA VASTU',204,128);x.fillStyle=MU;x.font='24px "IBM Plex Mono", monospace';x.fillText('HKV AURA SCAN REPORT · '+R.id,206,166);
  x.strokeStyle='rgba(245,191,79,.4)';x.lineWidth=1.5;x.beginPath();x.moveTo(90,205);x.lineTo(PW-90,205);x.stroke();
  if(title){x.fillStyle=TX;x.font='52px Marcellus, Georgia, serif';x.fillText(title,90,285)}
- x.fillStyle=MU;x.font='22px Mukta, sans-serif';x.textAlign='center';x.fillText(`Harssh Bhardwaj · Hare Krishna Vastu · @vastuexpertharssh · Page ${n}/4`,PW/2,PH-80);x.textAlign='left';
  return[c,x]}
+function footers(pages){pages.forEach((c,i)=>{const x=c.getContext('2d');x.fillStyle=MU;x.font='22px Mukta, sans-serif';x.textAlign='center';x.fillText(`Harssh Bhardwaj · Hare Krishna Vastu · @vastuexpertharssh · Page ${i+1}/${pages.length}`,PW/2,PH-80);x.textAlign='left'})}
 function sectionLabel(x,t,X,Y,col){x.fillStyle=col||CY;x.font='600 22px "IBM Plex Mono", monospace';x.fillText(t.toUpperCase(),X,Y)}
 function ring(x,cx,cy,r,v,col,label){x.lineWidth=16;x.strokeStyle='rgba(255,255,255,.08)';x.beginPath();x.arc(cx,cy,r,0,7);x.stroke();x.strokeStyle=col;x.lineCap='round';x.beginPath();x.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+Math.PI*2*v/100);x.stroke();x.lineCap='butt';x.textAlign='center';x.fillStyle=TX;x.font='44px Marcellus, Georgia, serif';x.fillText(v+'%',cx,cy+14);x.fillStyle=MU;x.font='22px Mukta, sans-serif';x.fillText(label,cx,cy+r+44);x.textAlign='left'}
+function tiles(x,y,items){const n=items.length,gap=20,tw=(PW-180-gap*(n-1))/n;items.forEach(([v,l],i)=>{const bx=90+i*(tw+gap);x.fillStyle='rgba(20,16,48,.9)';rr(x,bx,y,tw,160,20);x.fill();x.strokeStyle='rgba(245,191,79,.5)';x.lineWidth=2;rr(x,bx,y,tw,160,20);x.stroke();x.textAlign='center';x.fillStyle=GOLD;x.font='58px Marcellus, Georgia, serif';x.fillText(v,bx+tw/2,y+86);x.fillStyle=MU;x.font='21px Mukta, sans-serif';x.fillText(l,bx+tw/2,y+132);x.textAlign='left'});return y+160}
+function kvRows(x,y,rows,X,W){rows.forEach(([a,b])=>{x.fillStyle=MU;x.font='25px Mukta, sans-serif';x.fillText(a,X,y);x.fillStyle=TX;x.font='700 25px Mukta, sans-serif';const yy=wrap(x,b,X+270,y,W-270,34);y=Math.max(y+40,yy+6)});return y}
 function buildPdfPages(){const P=R,N=P.num,pages=[];
  {const[c,x]=pageBase(1,'');
   x.textAlign='center';x.fillStyle=GOLD;x.font='30px "IBM Plex Mono", monospace';x.fillText('॥ DIVYA AURA PARIKSHA ॥',PW/2,280);
@@ -879,31 +995,45 @@ function buildPdfPages(){const P=R,N=P.num,pages=[];
   y+=24;sectionLabel(x,'Urja Maapdand',90,y);y+=120;
   [[P.prana,'Pran Shakti','#2fd38a'],[P.shield,'Suraksha Kavach',GOLD],[P.shanti,'Manasik Shanti','#4fb7ff'],[P.karmic,'Karmic Bhaar','#ff8f3d']].forEach(([v,l,col],i)=>ring(x,212+i*272,y,80,v,col,l));
   pages.push(c)}
- {const[c,x]=pageBase(3,'Cheiro Ank Jyotish');let y=340;
-  [[N.mul,'Mulank'],[N.bhag,'Bhagyank'],[`${N.comp}/${N.single}`,'Naamank'],[N.py,'Personal Year 2026']].forEach(([v,l],i)=>{const bx=90+i*270;x.fillStyle='rgba(20,16,48,.9)';rr(x,bx,y,250,170,20);x.fill();x.strokeStyle='rgba(245,191,79,.5)';x.lineWidth=2;rr(x,bx,y,250,170,20);x.stroke();x.textAlign='center';x.fillStyle=GOLD;x.font='60px Marcellus, Georgia, serif';x.fillText(v,bx+125,y+90);x.fillStyle=MU;x.font='22px Mukta, sans-serif';x.fillText(l,bx+125,y+140);x.textAlign='left'});y+=240;
-  sectionLabel(x,'Naamank ka Rahasya (Chaldean)',90,y);y+=50;
-  if(N.cm){x.fillStyle=GOLD;x.font='36px Marcellus, Georgia, serif';x.fillText(`Ank ${N.comp}: ${N.cm[0]}`,90,y);y+=46;x.fillStyle=TX;x.font='26px Mukta, sans-serif';y=wrap(x,N.cm[1],90,y,PW-180,38)}
-  x.fillStyle=MU;x.font='26px Mukta, sans-serif';y=wrap(x,`Naamank ${N.single}: ${N.singleM}`,90,y,PW-180,38);y+=10;
-  x.fillStyle=TX;x.font='700 26px Mukta, sans-serif';const lbl='Naam aur Mulank ka mel: ';x.fillText(lbl,90,y);const lw=x.measureText(lbl).width;x.fillStyle=N.compat[1];x.fillText(N.compat[0],90+lw,y);y+=40;x.fillStyle=MU;x.font='24px Mukta, sans-serif';y=wrap(x,N.compat[2],90,y,PW-180,36);y+=40;
-  sectionLabel(x,'Lo Shu Grid',90,y);sectionLabel(x,'Kua Ank aur Dishaayein',660,y);y+=30;
-  const gs=150;[4,9,2,3,5,7,8,1,6].forEach((n,i)=>{const cx=90+(i%3)*(gs+10),cy=y+Math.floor(i/3)*(gs+10),has=N.cnt[n];
+ {const[c,x]=pageBase(3,'Vedic aur Cheiro Ank Jyotish');let y=330;
+  y=tiles(x,y,[[N.mul,'Mulank (Driver)'],[N.bhag,'Bhagyank (Conductor)'],[`${N.comp}/${N.single}`,'Naamank'],[N.kua,'Kua Ank']])+56;
+  sectionLabel(x,`Driver-Conductor · ${N.mulP} + ${N.bhagP}`,90,y);x.textAlign='right';x.fillStyle=N.dc==='mitra'?'#3ddc84':N.dc==='sam'?'#ffc53d':'#ff5a5a';x.font='700 26px Mukta, sans-serif';x.fillText(N.dc==='mitra'?'Mitra':N.dc==='sam'?'Sam':'Takraav',PW-90,y);x.textAlign='left';y+=42;
+  x.fillStyle=TX;x.font='25px Mukta, sans-serif';y=wrap(x,N.dcTxt,90,y,PW-180,36)+24;
+  sectionLabel(x,'Vedic Vivaran',90,y);y+=44;
+  y=kvRows(x,y,[['Swami grah',N.mulP],['Ratna / Upratna',`${N.ratna[0]} / ${N.ratna[1]}`],['Shubh ank',N.lucky.join(', ')],['Ashubh ank',N.unlucky.join(', ')||'Koi nahi'],['Shubh tareekhein',N.luckyDates.join(', ')],['Shubh rang / din',`${P.g[2]} / ${P.g[3]}`],['Shubh disha',P.g[1]]],90,PW-180)+16;
+  sectionLabel(x,'Naamank ka Rahasya (Chaldean)',90,y);y+=46;
+  if(N.cm){x.fillStyle=GOLD;x.font='34px Marcellus, Georgia, serif';x.fillText(`Ank ${N.comp}: ${N.cm[0]}`,90,y);y+=44;x.fillStyle=TX;x.font='25px Mukta, sans-serif';y=wrap(x,N.cm[1],90,y,PW-180,36)}
+  x.fillStyle=MU;x.font='25px Mukta, sans-serif';y=wrap(x,`Naamank ${N.single}: ${N.singleM}`,90,y,PW-180,36)+6;
+  x.fillStyle=TX;x.font='700 25px Mukta, sans-serif';const lbl='Naam aur Mulank ka mel: ';x.fillText(lbl,90,y);const lw=x.measureText(lbl).width;x.fillStyle=N.compat[1];x.fillText(N.compat[0],90+lw,y);y+=40;
+  if(N.sugg.length){x.fillStyle=MU;x.font='24px Mukta, sans-serif';x.fillText('Sujhaaye gaye naam:',90,y);y+=38;N.sugg.forEach(sg=>{x.fillStyle=GOLD;x.font='600 26px "IBM Plex Mono", monospace';x.fillText(`${sg.n}  ·  ${sg.comp}/${sg.single}`,110,y);y+=38})}
+  x.fillStyle=MU;x.font='20px Mukta, sans-serif';x.fillText('Ratna dharan se pehle kundli zaroor dikhwaayein.',90,Math.min(y+20,PH-140));
+  pages.push(c)}
+ {const[c,x]=pageBase(4,'Lo Shu Grid aur Jeevan Chakra');let y=330;
+  sectionLabel(x,'Lo Shu Grid',90,y);sectionLabel(x,'Grid ke Yog aur Kamiyaan',600,y);y+=26;const gs=150;
+  [4,9,2,3,5,7,8,1,6].forEach((n,i)=>{const cx=90+(i%3)*(gs+10),cy=y+Math.floor(i/3)*(gs+10),has=N.cnt[n];
    if(has){const g=x.createLinearGradient(cx,cy,cx+gs,cy+gs);g.addColorStop(0,GOLD);g.addColorStop(1,'#ff8a2a');x.fillStyle=g}else x.fillStyle='rgba(20,16,48,.9)';rr(x,cx,cy,gs,gs,18);x.fill();x.strokeStyle='rgba(245,191,79,.4)';x.lineWidth=2;rr(x,cx,cy,gs,gs,18);x.stroke();
    x.textAlign='center';x.fillStyle=has?'#1a0f00':'#3a3360';x.font='600 44px "IBM Plex Mono", monospace';x.fillText(has?String(n).repeat(Math.min(has,3)):n,cx+gs/2,cy+gs/2+15);x.textAlign='left'});
-  let ky=y+20;x.fillStyle=GOLD;x.font='72px Marcellus, Georgia, serif';x.fillText(N.kua,660,ky+60);x.fillStyle=MU;x.font='22px Mukta, sans-serif';x.fillText('Kua ank',730,ky+54);ky+=110;
-  N.kuaDirs.forEach((d,i)=>{x.fillStyle=MU;x.font='24px Mukta, sans-serif';x.fillText(KUA_LBL[i],660,ky);x.fillStyle=TX;x.font='600 26px "IBM Plex Mono", monospace';x.textAlign='right';x.fillText(d,PW-90,ky);x.textAlign='left';ky+=46});
-  y+=3*(gs+10)+50;sectionLabel(x,'Gaayab Ank ke Upay',90,y);y+=46;x.font='26px Mukta, sans-serif';
-  N.missing.slice(0,5).forEach(n=>{x.fillStyle=GOLD;x.font='600 26px "IBM Plex Mono", monospace';x.fillText(String(n),90,y);x.fillStyle=TX;x.font='26px Mukta, sans-serif';y=wrap(x,LOSHU_REM[n],130,y,PW-220,36)+4});
+  let py_=y+28;(N.planes.length?N.planes:[{nm:'Koi poora yog nahi',ok:true,t:'Grid santulit hai, koi poori line khaali nahi.'}]).slice(0,6).forEach(pl=>{x.fillStyle=pl.ok?'#3ddc84':'#ff8f3d';x.font='700 24px Mukta, sans-serif';x.fillText(`${pl.ok?'✦':'✕'} ${pl.nm}`,600,py_);py_+=32;x.fillStyle=MU;x.font='22px Mukta, sans-serif';py_=wrap(x,pl.t,626,py_,PW-716,30)+10});
+  y=Math.max(y+3*(gs+10),py_)+40;
+  x.fillStyle=TX;x.font='700 26px Mukta, sans-serif';x.fillText(`Gaayab ank: ${N.missing.join(', ')||'Koi nahi'}`,90,y);y+=50;
+  if(N.reps.length){sectionLabel(x,'Dohraaye Ank',90,y);y+=42;N.reps.forEach(rp=>{x.fillStyle=GOLD;x.font='600 26px "IBM Plex Mono", monospace';x.fillText(String(rp.n).repeat(rp.k),90,y);x.fillStyle=TX;x.font='25px Mukta, sans-serif';y=wrap(x,rp.t,200,y,PW-290,34)+6});y+=20}
+  sectionLabel(x,`Kua Ank ${N.kua} · Shubh Dishaayein`,90,y);y+=44;y=kvRows(x,y,N.kuaDirs.map((d,i)=>[KUA_LBL[i],DIRN[d]]),90,PW-180)+16;
+  sectionLabel(x,'Jeevan Chakra',90,y);y+=30;y=tiles(x,y,[[N.py,'Personal Year 2026'],[N.pm,'Is Mahine'],[N.pd,'Aaj']])+44;
+  x.fillStyle=TX;x.font='24px Mukta, sans-serif';y=wrap(x,`Saal: ${CYCLE[N.py]}. Mahina: ${CYCLE[N.pm]}.`,90,y,PW-180,34);
   pages.push(c)}
- {const[c,x]=pageBase(4,'Upay aur Margdarshan');let y=350;
-  x.fillStyle='#fff3d1';x.font='italic 32px Marcellus, Georgia, serif';y=wrap(x,'“'+P.aura.m+'”',90,y,PW-180,46)+20;
-  sectionLabel(x,'Mukhya Kamiyaan',90,y,'#ff8f3d');y+=46;x.font='26px Mukta, sans-serif';P.kami.forEach(k=>{x.fillStyle='#ff5a5a';x.fillText('◆',90,y);x.fillStyle=TX;y=wrap(x,k,124,y,PW-214,36)+6});y+=24;
-  sectionLabel(x,'Upay · Remedies',90,y,GOLD);y+=46;P.upay.forEach((u,i)=>{x.fillStyle=GOLD;x.font='600 24px "IBM Plex Mono", monospace';x.fillText(String(i+1).padStart(2,'0'),90,y);x.fillStyle=TX;x.font='26px Mukta, sans-serif';y=wrap(x,u,140,y,PW-230,36)+8});y+=24;
-  sectionLabel(x,'Grah aur Vastu',90,y);y+=46;[['Grah',P.g[0]],['Shubh disha',P.g[1]],['Shubh rang',P.g[2]],['Shubh din',P.g[3]]].forEach(([a,b])=>{x.fillStyle=MU;x.font='26px Mukta, sans-serif';x.fillText(a,90,y);x.fillStyle=TX;x.font='700 26px Mukta, sans-serif';x.fillText(b,340,y);y+=40});
-  const by=Math.max(y+30,1330);x.fillStyle='rgba(42,22,64,.95)';rr(x,90,by,PW-180,230,24);x.fill();x.strokeStyle=GOLD;x.lineWidth=3;rr(x,90,by,PW-180,230,24);x.stroke();
-  x.textAlign='center';x.fillStyle=GOLD;x.font='22px "IBM Plex Mono", monospace';x.fillText('PERSONAL CONSULTATION',PW/2,by+52);x.fillStyle=TX;x.font='36px Marcellus, Georgia, serif';x.fillText('Aura healing aur Vastu correction ke liye',PW/2,by+106);x.fillText('Harssh Bhardwaj se judein',PW/2,by+150);x.fillStyle=CY;x.font='28px "IBM Plex Mono", monospace';x.fillText('@vastuexpertharssh  ·  @harekrishnavastu',PW/2,by+200);
-  x.fillStyle=MU;x.font='20px Mukta, sans-serif';x.fillText('Yeh report spiritual margdarshan ke liye hai. Yeh medical ya lab jaanch nahi hai.',PW/2,PH-120);x.textAlign='left';
-  pages.push(c)}
- return pages}
+ // remedies flow across as many pages as needed
+ let [c,x]=pageBase(5,'Kamiyaan aur Vishesh Upay'),y=340;const LIM=PH-150;
+ const need=h=>{if(y+h>LIM){pages.push(c);[c,x]=pageBase(0,'Vishesh Upay (jaari)');y=340}};
+ x.fillStyle='#fff3d1';x.font='italic 30px Marcellus, Georgia, serif';y=wrap(x,'“'+P.aura.m+'”',90,y,PW-180,44)+18;
+ sectionLabel(x,'Mukhya Kamiyaan',90,y,'#ff8f3d');y+=44;x.font='25px Mukta, sans-serif';P.kami.forEach(k=>{need(80);x.fillStyle='#ff5a5a';x.fillText('◆',90,y);x.fillStyle=TX;x.font='25px Mukta, sans-serif';y=wrap(x,k,124,y,PW-214,34)+6});y+=22;
+ need(120);sectionLabel(x,'Aapke Vishesh Upay',90,y,GOLD);y+=40;x.fillStyle=MU;x.font='21px Mukta, sans-serif';x.fillText('Yeh upay sirf aapke scan, chakra aur ank ke hisaab se chune gaye hain.',90,y);y+=44;
+ P.upay.forEach((u,i)=>{x.font='25px Mukta, sans-serif';const lines=Math.ceil(x.measureText(u.t).width/(PW-250));need(lines*34+78);
+  x.fillStyle=GOLD;x.font='600 22px "IBM Plex Mono", monospace';x.fillText(String(i+1).padStart(2,'0'),90,y);x.fillText(u.c.toUpperCase(),140,y);y+=34;
+  x.fillStyle=TX;x.font='25px Mukta, sans-serif';y=wrap(x,u.t,140,y,PW-230,34);x.fillStyle=MU;x.font='20px Mukta, sans-serif';x.fillText(u.w,140,y);y+=40});
+ need(270);const by=y+10;x.fillStyle='rgba(42,22,64,.95)';rr(x,90,by,PW-180,230,24);x.fill();x.strokeStyle=GOLD;x.lineWidth=3;rr(x,90,by,PW-180,230,24);x.stroke();
+ x.textAlign='center';x.fillStyle=GOLD;x.font='22px "IBM Plex Mono", monospace';x.fillText('PERSONAL CONSULTATION',PW/2,by+52);x.fillStyle=TX;x.font='36px Marcellus, Georgia, serif';x.fillText('Aura healing aur Vastu correction ke liye',PW/2,by+106);x.fillText('Harssh Bhardwaj se judein',PW/2,by+150);x.fillStyle=CY;x.font='28px "IBM Plex Mono", monospace';x.fillText('@vastuexpertharssh  ·  @harekrishnavastu',PW/2,by+200);
+ x.fillStyle=MU;x.font='20px Mukta, sans-serif';x.fillText('Yeh report spiritual margdarshan ke liye hai. Yeh medical ya lab jaanch nahi hai.',PW/2,PH-120);x.textAlign='left';
+ pages.push(c);footers(pages);return pages}
 async function makePdf(share){const btn=share?$('#sharePdf'):$('#pdfBtn'),old=btn.textContent;btn.disabled=true;btn.textContent='PDF ban rahi hai…';Snd.beep(880,.1,.1);
  try{await Promise.all(['44px Marcellus','italic 32px Marcellus','26px Mukta','700 26px Mukta','22px "IBM Plex Mono"','600 22px "IBM Plex Mono"'].map(f=>document.fonts.load(f).catch(()=>{})));
   if(!window.jspdf)throw new Error('pdf lib');const{jsPDF}=window.jspdf;const doc=new jsPDF({unit:'pt',format:'a4',compress:true});
