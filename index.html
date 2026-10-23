@@ -465,16 +465,16 @@ async function loadDetector(){if(det.state!=='idle')return;det.state='loading';
   try{det.pl=await mp.PoseLandmarker.createFromOptions(fs,opts('GPU'))}catch(e){det.pl=await mp.PoseLandmarker.createFromOptions(fs,opts('CPU'))}
   det.state='ready';setTimeout(loadFace,300);return}catch(e){}}
  det.state='failed';setTimeout(loadFace,300)}
-let lastDetT=0,lastVT=-1,maskOK=0;
+let lastDetT=0,lastVT=-1,maskOK=0,macc=null,maskW=0,maskH=0;
 const dcv=document.createElement('canvas'),dctx=dcv.getContext('2d',{willReadFrequently:true});
 const mcv=document.createElement('canvas'),mctx=mcv.getContext('2d');
 function runDetect(now){if(!src)return;
  try{if(src===vid){if(vid.readyState<2||vid.currentTime===lastVT)return;lastVT=vid.currentTime}else if(now-lastDetT<150)return;
-  const[sw,sh]=srcDims(),dw=320,dh=Math.max(1,Math.round(320*sh/sw));if(dcv.width!==dw||dcv.height!==dh){dcv.width=dw;dcv.height=dh}dctx.drawImage(src,0,0,dw,dh);
+  const[sw,sh]=srcDims(),dw=384,dh=Math.max(1,Math.round(384*sh/sw));if(dcv.width!==dw||dcv.height!==dh){dcv.width=dw;dcv.height=dh}dctx.drawImage(src,0,0,dw,dh);
   runFace(now);if(det.state!=='ready')return;
   const ts=Math.max(now,lastDetT+1);lastDetT=ts;const r=det.pl.detectForVideo(dcv,ts);
   const masks=r&&r.segmentationMasks;
-  if(masks&&masks[0]){try{const mk=masks[0],a=mk.getAsFloat32Array(),mw=mk.width,mh=mk.height;if(mcv.width!==mw||mcv.height!==mh){mcv.width=mw;mcv.height=mh}const id=mctx.createImageData(mw,mh),D=id.data;for(let i=0;i<a.length;i++){const j=i*4;D[j]=D[j+1]=D[j+2]=255;D[j+3]=a[i]*255}mctx.putImageData(id,0,0);maskOK=now}catch(e){}masks.forEach(m=>{try{m.close()}catch(e){}})}
+  if(masks&&masks[0]){try{const mk=masks[0],a=mk.getAsFloat32Array(),mw=mk.width,mh=mk.height;if(mcv.width!==mw||mcv.height!==mh){mcv.width=mw;mcv.height=mh}if(!macc||macc.length!==a.length)macc=new Float32Array(a);const id=mctx.createImageData(mw,mh),D=id.data;for(let i=0;i<a.length;i++){const v=macc[i]=macc[i]*.42+a[i]*.58,e=clamp((v-.22)/.56,0,1),j=i*4;D[j]=D[j+1]=D[j+2]=255;D[j+3]=e*e*(3-2*e)*255}mctx.putImageData(id,0,0);maskW=mw;maskH=mh;maskOK=now}catch(e){}masks.forEach(m=>{try{m.close()}catch(e){}})}
   const lm=r&&r.landmarks&&r.landmarks[0];
   if(lm){const v=[0,11,12].map(i=>lm[i].visibility??1);const conf=v.reduce((a,b)=>a+b,0)/3;if(conf>.5){det.lm=lm;det.seen=now;det.conf=conf;return}}
   if(now-det.seen>600){det.lm=null;det.conf=0}}catch(e){}}
@@ -488,6 +488,7 @@ function loadFace(){if(face.state!=='idle')return;face.state='loading';
  sc.onerror=()=>{face.state='failed'};document.head.appendChild(sc)}
 function runFace(now){if(face.state!=='ready'||face.busy||now-face.last<110)return;face.last=now;face.busy=true;Promise.resolve().then(()=>face.fm.send({image:dcv})).catch(()=>{}).finally(()=>{face.busy=false})}
 const faceOn=now=>!!face.lm&&now-face.seen<600;
+function liveLoc(){if(!srcPts)return{cx:.5,cy:.5,ys:CK_Y};const[sw,sh]=srcDims();return{cx:srcPts[3].x/sw,cy:(srcPts[6].y+srcPts[0].y)/2/sh,ys:srcPts.map(q=>q.y/sh)}}
 const maskOn=now=>now-maskOK<500;
 
 /* ================= GEOMETRY ================= */
@@ -503,7 +504,7 @@ function updateSrcPts(){if(!det.lm)return;const[sw,sh]=srcDims(),L=i=>({x:det.lm
  const h1=L(23),h2=L(24);const T=Math.min(h1.v,h2.v)>.5?sub(avg(h1,h2),shm):{x:0,y:sw_*1.35};
  const p=[add(shm,T,1),add(shm,T,.78),add(shm,T,.5),add(shm,T,.16),{x:lerp(mouth.x,shm.x,.6),y:lerp(mouth.y,shm.y,.6)},add(eye,sub(eye,nose),.55),add(eye,sub(eye,mouth),1.55)];
  if(faceOn(performance.now())){const F=i=>({x:face.lm[i].x*sw,y:face.lm[i].y*sh});const aj=F(9),top=F(10),br=F(168);p[5]=aj;p[6]=add(top,sub(top,br),.9)}
- if(!srcPts){srcPts=p;srcPts.sw=sw_}else{p.forEach((q,i)=>{srcPts[i].x=lerp(srcPts[i].x,q.x,.35);srcPts[i].y=lerp(srcPts[i].y,q.y,.35)});srcPts.sw=lerp(srcPts.sw,sw_,.35)}}
+ if(!srcPts){srcPts=p;srcPts.sw=sw_}else{p.forEach((q,i)=>{const d=Math.hypot(q.x-srcPts[i].x,q.y-srcPts[i].y),al=clamp(.14+d/(sw_*.35),.14,.85);srcPts[i].x=lerp(srcPts[i].x,q.x,al);srcPts[i].y=lerp(srcPts[i].y,q.y,al)});srcPts.sw=lerp(srcPts.sw,sw_,.2)}}
 function ptsFor(w,h){if(!srcPts)return CK_Y.map(f=>({x:w/2,y:h*f}));
  const p=srcPts.map(q=>mapPt(q.x,q.y,w,h));const lim=h*.94;
  if(p[0].y>lim){const hy=p[3].y,sc=(lim-hy)/Math.max(1,p[0].y-hy);for(let i=0;i<3;i++){p[i].y=hy+(p[i].y-hy)*sc;p[i].x=p[3].x+(p[i].x-p[3].x)*sc}}
@@ -528,6 +529,45 @@ function size(){const d=Math.min(1.5,devicePixelRatio||1);cv.width=Math.round(in
 function drawCover(x,img,w,h){const[sw,sh]=srcDims();const s=Math.max(w/sw,h/sh),dw=sw*s,dh=sh*s;x.save();if(mirror){x.translate(w,0);x.scale(-1,1)}x.drawImage(img,(w-dw)/2,(h-dh)/2,dw,dh);x.restore()}
 const acv=document.createElement('canvas'),actx=acv.getContext('2d'),tcv=document.createElement('canvas'),tctx=tcv.getContext('2d');
 function tintMask(m,col,blur){if(tcv.width!==m.width||tcv.height!==m.height){tcv.width=m.width;tcv.height=m.height}const t=tctx;t.globalCompositeOperation='source-over';t.clearRect(0,0,tcv.width,tcv.height);t.filter=`blur(${blur}px)`;t.drawImage(m,0,0);t.filter='none';t.globalCompositeOperation='source-in';t.fillStyle=col;t.fillRect(0,0,tcv.width,tcv.height);t.globalCompositeOperation='source-over';return tcv}
+/* ===== REALISTIC BODY AURA ENGINE =====
+   Works on a small canvas in mask space: layered soft fields that follow the silhouette,
+   rising energy, drifting plasma texture, chakra-coloured inner corona, body cut out. */
+const AW=200,LC={};
+function lc(n,w,h){let c=LC[n];if(!c){c=LC[n]=document.createElement('canvas');c.ctx=c.getContext('2d')}if(c.width!==w||c.height!==h){c.width=w;c.height=h}return c}
+const plasma=(()=>{const n=document.createElement('canvas');n.width=256;n.height=512;const x=n.getContext('2d');x.fillStyle='rgba(255,255,255,.38)';x.fillRect(0,0,256,256);
+ [[6,.6],[12,.45],[24,.3],[48,.18]].forEach(([g,al])=>{const s=document.createElement('canvas');s.width=s.height=g;const sx=s.getContext('2d'),id=sx.createImageData(g,g);for(let i=0;i<g*g;i++){id.data[i*4]=id.data[i*4+1]=id.data[i*4+2]=255;id.data[i*4+3]=Math.random()*255}sx.putImageData(id,0,0);x.globalAlpha=al;x.imageSmoothingEnabled=true;x.drawImage(s,0,0,256,256)});
+ x.globalAlpha=1;x.save();x.translate(0,512);x.scale(1,-1);x.drawImage(n,0,0,256,256,0,0,256,256);x.restore();return n})();
+const PREVIEW_PAL={aura:{hex:'#58f0e2'},aura2:{hex:'#7174ff'}};
+function bodyAura(x,P,t,k,mimg,toMain,loc,bgDim){if(k<=0||!mimg||!mimg.width)return;
+ const W=AW,H=Math.max(1,Math.round(AW*mimg.height/mimg.width));
+ const M=lc('m',W,H),mc=M.ctx;mc.clearRect(0,0,W,H);mc.drawImage(mimg,0,0,W,H);
+ const cx=(loc?loc.cx:.5)*W,cy=(loc?loc.cy:.5)*H,ys=loc?loc.ys:CK_Y;
+ const soft=(n,blur,fill)=>{const c=lc(n,W,H),g=c.ctx;g.globalCompositeOperation='source-over';g.clearRect(0,0,W,H);g.filter=`blur(${blur}px)`;g.drawImage(M,0,0);g.filter='none';g.globalCompositeOperation='source-in';g.fillStyle=typeof fill==='function'?fill(g):fill;g.fillRect(0,0,W,H);g.globalCompositeOperation='source-over';return c};
+ // dim the room so the person and the field stand out
+ if(bgDim>0){const D=lc('d',W,H),dc=D.ctx;dc.globalCompositeOperation='source-over';dc.clearRect(0,0,W,H);dc.fillStyle=`rgba(4,2,14,${bgDim})`;dc.fillRect(0,0,W,H);dc.globalCompositeOperation='destination-out';dc.filter=`blur(${W*.02}px)`;dc.drawImage(M,0,0);dc.filter='none';dc.globalCompositeOperation='source-over';toMain(x,D)}
+ const A=lc('a',W,H),a=A.ctx;a.globalCompositeOperation='source-over';a.globalAlpha=1;a.clearRect(0,0,W,H);
+ const at=(s,dx,dy,img,al)=>{a.globalAlpha=al;a.save();a.translate(cx+dx,cy+dy);a.scale(s,s);a.translate(-cx,-cy);a.drawImage(img,0,0);a.restore()};
+ const breathe=1+.025*Math.sin(t*1.1);
+ // outer field (secondary colour), wide and soft
+ const o=soft('o',W*.1,P.aura2.hex);at(1.26*breathe,0,-H*.012,o,.55*k);
+ // main field: rising layers give the flowing, flame-like movement
+ const mm=soft('mm',W*.055,P.aura.hex);at(1.1*breathe,0,0,mm,.7*k);
+ for(let i=0;i<5;i++){const ph=(t*.32+i/5)%1;at(1.05+ph*.2,Math.sin(t*1.6+i*1.9)*W*.012,-ph*H*.1,mm,k*.45*Math.sin(ph*Math.PI))}
+ // drifting plasma texture makes the field wispy, never a flat blob
+ a.globalAlpha=1;a.globalCompositeOperation='destination-in';const TH=H*2,y0=-((t*H*.16)%TH),xo=Math.sin(t*.4)*W*.04;a.drawImage(plasma,xo-W*.05,y0,W*1.1,TH);a.drawImage(plasma,xo-W*.05,y0+TH,W*1.1,TH);a.globalCompositeOperation='source-over';
+ // inner corona coloured by the chakra at each height of the body
+ const rim=soft('r',W*.016,g=>{const gr=g.createLinearGradient(0,ys[0]*H,0,ys[6]*H);CHAKRAS.forEach((c,i)=>gr.addColorStop(i/6,c.hex));return gr});
+ at(1.04,0,0,rim,.95*k);at(1.075,0,-H*.004,rim,.45*k);
+ // thin bright edge right at the skin, the Kirlian-style corona
+ const e=soft('e',W*.006,'#fff6dc');at(1.012,0,0,e,.55*k*(.85+.15*Math.sin(t*5)));
+ // keep the person clear: field lives around the body, a faint sheen stays on it
+ a.globalAlpha=.9;a.globalCompositeOperation='destination-out';a.drawImage(M,0,0);a.globalAlpha=1;a.globalCompositeOperation='source-over';
+ x.save();x.globalCompositeOperation='screen';toMain(x,A);x.globalCompositeOperation='lighter';x.globalAlpha=.4*Math.min(1,k);toMain(x,A);x.restore()}
+/* sparks that leave the real edge of the silhouette */
+function edgeSparks(n,toPt,cxn,cyn,ysn,palHex){if(!macc||!maskW)return;for(let tries=0,got=0;tries<n*8&&got<n;tries++){const i=(Math.random()*macc.length)|0,v=macc[i];if(v<.35||v>.65)continue;got++;
+  const u=(i%maskW)/maskW,vv=((i/maskW)|0)/maskH,q=toPt(u,vv),c0=toPt(cxn,cyn),dx=q.x-c0.x,dy=q.y-c0.y,dl=Math.hypot(dx,dy)||1;
+  let ci=0,best=9;ysn.forEach((y,j)=>{const d=Math.abs(y-vv);if(d<best){best=d;ci=j}});
+  const sp=(.6+Math.random()*1.6);parts.push({x:q.x,y:q.y,vx:dx/dl*sp,vy:dy/dl*sp-1.2-Math.random()*1.5,life:1,c:palHex||CHAKRAS[ci].hex,sz:1+Math.random()*2.2,edge:1})}}
 /* aura that lives BEHIND the person: glow hugging the body, cut out over the body */
 function auraBehind(x,w,h,P,t,k,C,mdraw,mimg){if(k<=0)return;if(acv.width!==w||acv.height!==h){acv.width=w;acv.height=h}const a=actx;
  a.globalCompositeOperation='source-over';a.clearRect(0,0,w,h);a.fillStyle=`rgba(5,3,15,${.5*Math.min(1,k*1.5)})`;a.fillRect(0,0,w,h);a.globalCompositeOperation='destination-out';mdraw(a,mimg);x.drawImage(acv,0,0);
@@ -566,8 +606,9 @@ $('#scanBtn').addEventListener('click',async()=>{if(phase!=='preview'||$('#scanB
 
 const T=13.2;
 const STEPS=[[0,'Bio-field se sampark ho raha hai…'],[1.3,'7.83 Hz base frequency lock'],...CHAKRAS.map((c,i)=>[1.6+i*1.1,`${c.n} chakra padha ja raha hai…`]),[9.4,'Aura vistar maapa ja raha hai…'],[10.4,'Nazar dosh layer check ho rahi hai…'],[11.6,'Energy signature match ho raha hai…'],[12.4,'Report taiyaar…']];
+const headRing={r:0,a:0};
 const BONES=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24]];
-function tick(now){raf=requestAnimationFrame(tick);const w=cv.width,h=cv.height,x=cx2,m=Math.min(w,h),f=w/400;
+function tick(now){raf=requestAnimationFrame(tick);const w=cv.width,h=cv.height,x=cx2,m=Math.min(w,h),f=w/400;if(parts.length>420)parts.splice(0,parts.length-420);
  x.globalCompositeOperation='source-over';x.fillStyle='#000';x.fillRect(0,0,w,h);
  if(!src)return;drawSrc(x,w,h);
  runDetect(now);updateSrcPts();
@@ -581,12 +622,14 @@ function tick(now){raf=requestAnimationFrame(tick);const w=cv.width,h=cv.height,
  if(isP){const[sw,sh]=srcDims();const vis=det.lm.slice(0,25).filter(q=>(q.visibility??1)>.5).map(q=>mapPt(q.x*sw,q.y*sh,w,h));
   if(vis.length){let x1=Math.min(...vis.map(q=>q.x))-20*f,x2=Math.max(...vis.map(q=>q.x))+20*f,y1=Math.min(...vis.map(q=>q.y))-m*.12,y2=Math.max(...vis.map(q=>q.y))+20*f;x1=clamp(x1,8,w-8);x2=clamp(x2,8,w-8);y1=clamp(y1,top+30*f,h-8);y2=clamp(y2,8,bot);
    x.save();x.strokeStyle='rgba(61,220,132,.9)';x.lineWidth=2*f;const cl=18*f;[[x1,y1,1,1],[x2,y1,-1,1],[x1,y2,1,-1],[x2,y2,-1,-1]].forEach(([a,b,p,q])=>{x.beginPath();x.moveTo(a,b+cl*q);x.lineTo(a,b);x.lineTo(a+cl*p,b);x.stroke()});
-   x.font=`600 ${11*f}px "IBM Plex Mono",monospace`;x.fillStyle='rgba(61,220,132,.95)';x.fillText(`HUMAN · ${Math.round(det.conf*100)}%`,x1+4*f,y1-6*f);
+   x.font=`600 ${11*f}px "IBM Plex Mono",monospace`;x.fillStyle='rgba(61,220,132,.95)';x.fillText(`HUMAN · ${Math.round(det.conf*100)}%`,x1+4*f,Math.min(y2+16*f,bot-4*f));
    x.strokeStyle='rgba(88,240,226,.35)';x.lineWidth=1.5*f;BONES.forEach(([a,b])=>{const A=det.lm[a],B=det.lm[b];if((A.visibility??1)<.5||(B.visibility??1)<.5)return;const p1=mapPt(A.x*sw,A.y*sh,w,h),p2=mapPt(B.x*sw,B.y*sh,w,h);x.beginPath();x.moveTo(p1.x,p1.y);x.lineTo(p2.x,p2.y);x.stroke()});x.restore()}}
  // head rings follow the third eye
- const ringR=m*.2;x.save();x.translate(P[5].x,P[5].y);x.lineWidth=2*f;
+ let ringR=m*.2,roll=0;if(faceOn(now)){const[sw,sh]=srcDims(),e1=mapPt(face.lm[33].x*sw,face.lm[33].y*sh,w,h),e2=mapPt(face.lm[263].x*sw,face.lm[263].y*sh,w,h);roll=Math.atan2(e2.y-e1.y,e2.x-e1.x);if(roll>Math.PI/2)roll-=Math.PI;if(roll<-Math.PI/2)roll+=Math.PI;ringR=clamp(Math.hypot(e2.x-e1.x,e2.y-e1.y)*1.05,m*.07,m*.2)}
+ headRing.r=lerp(headRing.r||ringR,ringR,.25);headRing.a=lerp(headRing.a||0,roll,.25);ringR=headRing.r;x.save();x.translate(P[5].x,P[5].y);x.rotate(headRing.a);x.lineWidth=2*f;
  [[1,'rgba(88,240,226,.75)',.35,[16*f,10*f]],[1.15,'rgba(245,191,79,.6)',-.22,[4*f,14*f]],[1.3,'rgba(88,240,226,.3)',.12,[60*f,30*f]]].forEach(([s,c,sp,d])=>{x.save();x.rotate(ts*sp*(phase==='scan'?3:1));x.strokeStyle=c;x.setLineDash(d);x.beginPath();x.ellipse(0,0,ringR*s*.85,ringR*s*1.05,0,0,7);x.stroke();x.restore()});
  x.setLineDash([]);x.strokeStyle='rgba(245,191,79,.9)';for(let i=0;i<16;i++){const a=i*Math.PI/8+ts*.2;x.beginPath();x.moveTo(Math.cos(a)*ringR*1.4,Math.sin(a)*ringR*1.4*1.2);x.lineTo(Math.cos(a)*ringR*1.48,Math.sin(a)*ringR*1.48*1.2);x.stroke()}x.restore();
+ x.save();x.globalCompositeOperation='lighter';parts=parts.filter(p=>(p.life-=p.edge?.018:.012)>0);parts.forEach(p=>{p.x+=p.vx*(p.edge?f:1);p.y+=p.vy*(p.edge?f:1);if(p.edge)p.vy-=.02*f;x.fillStyle=rgba(p.c,p.life*(p.edge?.9:1));x.beginPath();x.arc(p.x,p.y,p.sz*(p.edge?f:1),0,7);x.fill()});x.restore();
  // HUD readouts (real values)
  x.save();x.font=`${11*f}px "IBM Plex Mono",monospace`;x.fillStyle='rgba(88,240,226,.9)';x.shadowColor='rgba(88,240,226,.8)';x.shadowBlur=6*f;
  const lx=bm+4*f,ly=top+bl+20*f,lh=16*f;
@@ -603,7 +646,7 @@ function tick(now){raf=requestAnimationFrame(tick);const w=cv.width,h=cv.height,
   if(btn.disabled===rdy){btn.disabled=!rdy;if(rdy){Snd.beep(990,.12,.12);vib(25)}}
   const st=det.state==='failed'?'Kandhe aur chehra frame mein rakh ke SCAN dabaayein':det.state!=='ready'?'Bio-field sensor calibrate ho raha hai…':isP?'Insaan detect hua. SCAN dabaayein':'Koi insaan nahi dikha. Frame mein aayein';
   const se=$('#stStatus');if(se.textContent!==st)se.textContent=st;
-  if(isP&&maskOn(now)){x.save();x.globalCompositeOperation='lighter';x.globalAlpha=.35+.15*Math.sin(ts*3);drawCover(x,tintMask(mcv,'#58f0e2',4),w,h);x.restore()}
+  if(isP&&maskOn(now)){bodyAura(x,PREVIEW_PAL,ts,.38,mcv,(a,img)=>drawCover(a,img,w,h),liveLoc(),.22);if(Math.random()<.5)edgeSparks(1,(u,v)=>mapPt(u*srcDims()[0],v*srcDims()[1],w,h),liveLoc().cx,liveLoc().cy,liveLoc().ys,'#58f0e2')}
   P.forEach((p,i)=>drawChakraDot(x,p.x,p.y,CHAKRAS[i].hex,isP?.5:.18,ts,m*.02));
  }
  // face mesh points (real 468-point face scan)
@@ -611,7 +654,9 @@ function tick(now){raf=requestAnimationFrame(tick);const w=cv.width,h=cv.height,
 
  if(phase==='scan'&&R){
   const bp=clamp((tt-1.4)/7.9,0,1),beamY=lerp(h*.97,h*.06,bp);
-  {const ak=clamp((tt-9.2)/1.6,0,1)*(1+.15*Math.sin(ts*6));if(maskOn(now))auraBehind(x,w,h,R,ts,ak,C,(a,img)=>drawCover(a,img,w,h),mcv);else drawAura(x,w,h,R,ts,ak,C)}
+  {const bloom=clamp((tt-9.2)/1.6,0,1),ak=(.3+.25*clamp((tt-1.4)/7.9,0,1)+.6*bloom)*(1+.12*Math.sin(ts*6));
+   if(maskOn(now)){const L=liveLoc(),tp=(u,v)=>mapPt(u*srcDims()[0],v*srcDims()[1],w,h);bodyAura(x,R,ts,ak,mcv,(a,img)=>drawCover(a,img,w,h),L,.3+.25*bloom);edgeSparks(bloom>0?4:2,tp,L.cx,L.cy,L.ys,bloom>0?null:'#58f0e2')}
+   else drawAura(x,w,h,R,ts,bloom*(1+.15*Math.sin(ts*6)),C)}
   if(tt>10.2&&tt<11.8){const sk=Math.sin((tt-10.2)/1.6*Math.PI)*(.25+R.nl*.18);x.save();for(let i=0;i<10;i++){const px=C.x+Math.sin(ts*.7+i*2.3)*C.rx*.9,py=C.y-C.ry*.6+i*C.ry*.13+Math.cos(ts+i)*20*f,rr=m*.2;const g=x.createRadialGradient(px,py,0,px,py,rr);g.addColorStop(0,`rgba(40,40,52,${sk*.7})`);g.addColorStop(1,'rgba(40,40,52,0)');x.fillStyle=g;x.fillRect(px-rr,py-rr,rr*2,rr*2)}x.restore()}
   if(bp>0&&bp<1){x.save();x.globalCompositeOperation='lighter';const bh=140*f;const g=x.createLinearGradient(0,beamY-bh,0,beamY+bh*.3);g.addColorStop(0,'rgba(88,240,226,0)');g.addColorStop(.85,'rgba(88,240,226,.28)');g.addColorStop(1,'rgba(88,240,226,0)');x.fillStyle=g;x.fillRect(0,beamY-bh,w,bh*1.3);x.fillStyle='rgba(200,255,250,.95)';x.shadowColor='#58f0e2';x.shadowBlur=24*f;x.fillRect(0,beamY-1.5*f,w,3*f);
    for(let i=0;i<w;i+=12*f){if(Math.random()<.25){x.fillStyle=`rgba(88,240,226,${Math.random()*.8})`;x.fillRect(i,beamY-Math.random()*40*f,2*f,2*f)}}x.restore()}
@@ -619,10 +664,10 @@ function tick(now){raf=requestAnimationFrame(tick);const w=cv.width,h=cv.height,
   CHAKRAS.forEach((c,i)=>{const y=P[i].y,cx=P[i].x;if(ignited[i]<0&&beamY<=y&&bp>0){ignited[i]=tt;Snd.beep(330*Math.pow(1.19,i),.25,.2,'triangle');Snd.beep(660*Math.pow(1.19,i),.12,.08);vib(30);for(let p=0;p<26;p++){const a=Math.random()*7,s=(1+Math.random()*4)*f;parts.push({x:cx,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,c:c.hex,sz:(1+Math.random()*2.5)*f})}}
    if(ignited[i]>=0){const age=tt-ignited[i];drawChakraDot(x,cx,y,c.hex,1,ts,m*.045);
     x.save();x.strokeStyle=rgba(c.hex,clamp(1-age/1.2,0,1));x.lineWidth=3*f;x.beginPath();x.arc(cx,y,m*.05+age*m*.25,0,7);x.stroke();x.restore();
-    const v=Math.round(R.ch[i]*clamp(age/.9,0,1)),side=i%2?-1:1,lx2=cx+side*m*.12;
+    const v=Math.round(R.ch[i]*clamp(age/.9,0,1));x.font=`600 ${12*f}px "IBM Plex Mono",monospace`;const tw=x.measureText(`${c.n.toUpperCase()}  ${v}%`).width+m*.14;let side=i%2?-1:1;if(side<0&&cx-tw<8*f)side=1;else if(side>0&&cx+tw>w-8*f)side=-1;const lx2=cx+side*m*.12;
     x.save();x.strokeStyle=rgba(c.hex,.8);x.lineWidth=1.5*f;x.beginPath();x.moveTo(cx+side*m*.05,y);x.lineTo(lx2,y);x.stroke();x.font=`600 ${12*f}px "IBM Plex Mono",monospace`;x.textAlign=side>0?'left':'right';x.fillStyle=c.hex;x.shadowColor=c.hex;x.shadowBlur=10*f;x.fillText(`${c.n.toUpperCase()}  ${v}%`,lx2+side*6*f,y+4*f);x.restore()}});
   if(tt<12)for(let p=0;p<3;p++)parts.push({x:C.x+(Math.random()-.5)*w*.8,y:h,vx:(Math.random()-.5)*.6*f,vy:-(1+Math.random()*3)*f,life:1,c:Math.random()<.5?R.aura.hex:'#58f0e2',sz:(1+Math.random()*2)*f});
-  x.save();x.globalCompositeOperation='lighter';parts=parts.filter(p=>(p.life-=.012)>0);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;x.fillStyle=rgba(p.c,p.life);x.beginPath();x.arc(p.x,p.y,p.sz,0,7);x.fill()});x.restore();
+  
   if(det.state==='ready'&&!isP&&tt>1&&tt<12){x.save();x.font=`600 ${14*f}px "IBM Plex Mono",monospace`;x.textAlign='center';x.fillStyle=`rgba(255,90,90,${.6+.4*Math.sin(ts*10)})`;x.fillText('TARGET LOST · FRAME MEIN RAHEIN',w/2,top+bl+110*f);x.restore()}
   if((tt>1.2&&tt<1.4)||(tt>9.2&&tt<9.35)||(tt>11.8&&tt<11.95)||Math.random()<.015){for(let i=0;i<6;i++){const y=Math.random()*h,hh=(4+Math.random()*30)*f,dx=(Math.random()-.5)*40*f;try{x.drawImage(cv,0,y,w,hh,dx,y,w,hh)}catch(e){}x.fillStyle=Math.random()<.5?'rgba(255,0,80,.12)':'rgba(0,255,230,.12)';x.fillRect(0,y,w,hh)}if(Math.random()<.3)Snd.glitch()}
   if(tt>11.3&&!shot){const s=Math.min(1,900/w);shot=document.createElement('canvas');shot.width=Math.round(w*s);shot.height=Math.round(h*s);shot.getContext('2d').drawImage(cv,0,0,shot.width,shot.height);Snd.beep(1400,.06,.1);vib([20,40,20])}
@@ -644,7 +689,7 @@ let resBase=null,resPts=null,resShot=null,resMask=null,resMaskNext=null;
 function statusOf(v){return v<50?['Block','#ff5a5a']:v<65?['Kamzor','#ff8f3d']:v<88?['Santulit','#3ddc84']:['Ati-sakriya','#ffc53d']}
 function basePts(){return resPts?resPts.map(([a,b])=>({x:a*720,y:b*960})):CK_Y.map(f=>({x:360,y:960*f}))}
 function baseCtr(p){if(!resPts)return null;return{x:p[3].x,y:(p[6].y+p[0].y)/2,rx:300,ry:Math.max((p[0].y-p[6].y)*.62,300),hx:p[6].x,hy:p[6].y}}
-function renderAuraFrame(x,t,dots){x.globalCompositeOperation='source-over';x.drawImage(resBase,0,0,720,960);x.fillStyle='rgba(10,4,30,.2)';x.fillRect(0,0,720,960);const p=basePts();if(resMask)auraBehind(x,720,960,R,t,1,baseCtr(p),(a,img)=>a.drawImage(img,0,0,720,960),resMask);else drawAura(x,720,960,R,t,1,baseCtr(p));if(dots)p.forEach((q,i)=>drawChakraDot(x,q.x,q.y,CHAKRAS[i].hex,.85,t,22))}
+function renderAuraFrame(x,t,dots){x.globalCompositeOperation='source-over';x.drawImage(resBase,0,0,720,960);x.fillStyle='rgba(10,4,30,.2)';x.fillRect(0,0,720,960);const p=basePts();if(resMask)bodyAura(x,R,t,1,resMask,(a,img)=>a.drawImage(img,0,0,720,960),resPts?{cx:resPts[3][0],cy:(resPts[6][1]+resPts[0][1])/2,ys:resPts.map(q=>q[1])}:null,.35);else drawAura(x,720,960,R,t,1,baseCtr(p));if(dots)p.forEach((q,i)=>drawChakraDot(x,q.x,q.y,CHAKRAS[i].hex,.85,t,22))}
 function finishResult(base,save,pts,sh,fromStage){
  const P=reading(cur.name,cur.dob,cur.gen);R=P;resBase=base;resPts=pts;resMask=fromStage?resMaskNext:null;resMaskNext=null;
  if(save)saveHist(base,pts);
