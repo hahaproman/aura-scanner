@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#07060f">
+<meta name="theme-color" content="#fbf7ee">
 <meta name="description" content="HKV Aura Scanner by Harssh Bhardwaj, Hare Krishna Vastu">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
@@ -381,8 +381,8 @@ const Snd={ac:null,master:null,on:true,drone:null,
 $$('.sndBtn').forEach(b=>b.addEventListener('click',()=>{Snd.init();Snd.toggle()}));
 /* ---------- light / dark theme (UI, PDF and story image) ---------- */
 const isLight=()=>document.documentElement.dataset.hkv==='light';
-function applyTheme(t){document.documentElement.dataset.hkv=t;$$('.themeBtn').forEach(b=>{b.textContent=b.id==='splashTheme'?(t==='light'?'☾ Dark':'☀ Light'):(t==='light'?'☾':'☀');b.setAttribute('aria-label',t==='light'?'Dark theme':'Light theme')});const m=document.querySelector('meta[name=theme-color]');if(m)m.content=t==='light'?'#f6f3fb':'#07060f'}
-applyTheme(store.get('hkv_theme','dark'));
+function applyTheme(t){document.documentElement.dataset.hkv=t;$$('.themeBtn').forEach(b=>{b.textContent=b.id==='splashTheme'?(t==='light'?'☾ Dark':'☀ Light'):(t==='light'?'☾':'☀');b.setAttribute('aria-label',t==='light'?'Dark theme':'Light theme')});const m=document.querySelector('meta[name=theme-color]');if(m)m.content=t==='light'?'#fbf7ee':'#07060f'}
+applyTheme(store.get('hkv_theme','light'));
 $$('.themeBtn').forEach(b=>b.addEventListener('click',()=>{const t=isLight()?'dark':'light';store.set('hkv_theme',t);applyTheme(t);Snd.beep(t==='light'?990:520,.08,.08)}));
 
 /* ================= MANDALA LOGO (16 Vastu zones) ================= */
