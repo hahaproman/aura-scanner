@@ -24,6 +24,24 @@
   --fd:'Marcellus',Georgia,serif; --fb:'Mukta',system-ui,sans-serif; --fm:'IBM Plex Mono',ui-monospace,monospace;
 }
 html,body{height:100%}
+:root[data-hkv="light"]{color-scheme:light;--void:#f6f3fb;--deep:#ffffff;--panel:#efe9f8;--line:#ddd3ee;--text:#1d1530;--muted:#62577d;--gold:#a8701a;--saffron:#d9650a;--cyan:#0b7f77;--good:#1a8f4f;--warn:#a87a06;--orange:#c45f17;--bad:#cf2f2f}
+[data-hkv="light"] #stage{--void:#07060f;--deep:#0e0b1f;--panel:#141030;--line:#2a2350;--text:#efe9ff;--muted:#a59cc9;--gold:#f5bf4f;--saffron:#ff8a2a;--cyan:#58f0e2;--good:#3ddc84;--bad:#ff5a5a;color:var(--text)}
+[data-hkv="light"] .btn.primary{color:#fff;box-shadow:0 6px 20px rgba(168,112,26,.28)}
+[data-hkv="light"] #scanBtn{color:#1a0f00}
+[data-hkv="light"] .splash-title{background:linear-gradient(180deg,#7a4c0c,#c0841e);-webkit-background-clip:text;background-clip:text}
+[data-hkv="light"] .msg{color:#6b4410}
+[data-hkv="light"] .cta{background:linear-gradient(160deg,#fff3dc,#f1e8ff)}
+[data-hkv="light"] .card,[data-hkv="light"] details.sci,[data-hkv="light"] .modecard{box-shadow:0 2px 14px rgba(70,40,130,.07)}
+[data-hkv="light"] .pill,[data-hkv="light"] #rBody b[style*="color"],[data-hkv="light"] #nBody b[style*="color"],[data-hkv="light"] #rBody h3[style*="color"],[data-hkv="light"] #rBody small[style*="color"],[data-hkv="light"] .ckv small{filter:brightness(.66) saturate(1.5)}
+[data-hkv="light"] .loshu span.miss{color:#c4b9dc}
+[data-hkv="light"] .dot{box-shadow:none}
+[data-hkv="light"] .split i:last-child{background:linear-gradient(90deg,#cfc5e6,#b8acd6)!important}
+[data-hkv="light"] .modal{background:rgba(20,10,40,.55)}
+[data-hkv="light"] .toast{box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.tb-r{display:flex;gap:6px;align-items:center;flex:none}
+.tb-r .themeBtn{width:34px;height:30px;padding:0;display:grid;place-items:center;font-size:15px}
+#splashTheme{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);right:max(16px,env(safe-area-inset-right,0px))}
+#splash{position:relative}
 [hidden]{display:none!important}
 body{background:var(--void);color:var(--text);font-family:var(--fb);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--void)}
@@ -171,6 +189,7 @@ ul.upay li::marker{color:var(--gold)}
 
 <!-- ============ SPLASH ============ -->
 <section id="splash" class="screen">
+  <button class="chip themeBtn" id="splashTheme" type="button">Light</button>
   <div class="wrap">
     <canvas id="mandala" width="640" height="640" aria-hidden="true"></canvas>
     <div>
@@ -187,7 +206,7 @@ ul.upay li::marker{color:var(--gold)}
   <div class="wrap">
     <div class="topbar">
       <div class="brand"><button class="back" type="button" data-back aria-label="Peeche">‹</button><canvas class="logo" width="80" height="80"></canvas><div><b>HARE KRISHNA VASTU</b><small>Harssh Bhardwaj</small></div></div>
-      <button class="chip on sndBtn" type="button">Sound On</button>
+      <div class="tb-r"><button class="chip themeBtn" type="button">Light</button><button class="chip on sndBtn" type="button">Sound On</button></div>
     </div>
     <div>
       <p class="eyebrow">Apni reading chunein</p>
@@ -205,7 +224,7 @@ ul.upay li::marker{color:var(--gold)}
   <div class="wrap">
     <div class="topbar">
       <div class="brand"><button class="back" type="button" data-back aria-label="Peeche">‹</button><canvas class="logo" width="80" height="80"></canvas><div><b>HARE KRISHNA VASTU</b><small>Harssh Bhardwaj · Aura Scanner</small></div></div>
-      <button class="chip on sndBtn" type="button">Sound On</button>
+      <div class="tb-r"><button class="chip themeBtn" type="button">Light</button><button class="chip on sndBtn" type="button">Sound On</button></div>
     </div>
     <div>
       <p class="eyebrow" id="fEyebrow">Step 1 · Energy Signature</p>
@@ -270,7 +289,7 @@ ul.upay li::marker{color:var(--gold)}
   <div class="wrap">
     <div class="topbar">
       <div class="brand"><button class="back" type="button" data-back aria-label="Peeche">‹</button><canvas class="logo" width="80" height="80"></canvas><div><b>HARE KRISHNA VASTU</b><small>Path Sangrah</small></div></div>
-      <button class="chip on sndBtn" type="button">Sound On</button>
+      <div class="tb-r"><button class="chip themeBtn" type="button">Light</button><button class="chip on sndBtn" type="button">Sound On</button></div>
     </div>
     <div><p class="eyebrow">Bhakti Sangrah</p><h2 style="font-size:28px">Path Sangrah</h2></div>
     <div class="row" id="pathTabs" style="gap:8px"></div>
@@ -293,7 +312,7 @@ ul.upay li::marker{color:var(--gold)}
   <div class="wrap">
     <div class="topbar">
       <div class="brand"><button class="back" type="button" data-back aria-label="Back">‹</button><canvas class="logo" width="80" height="80"></canvas><div><b>HARE KRISHNA VASTU</b><small>Numerology Report</small></div></div>
-      <button class="chip on sndBtn" type="button">Sound On</button>
+      <div class="tb-r"><button class="chip themeBtn" type="button">Light</button><button class="chip on sndBtn" type="button">Sound On</button></div>
     </div>
     <div id="nBody"></div>
     <div class="row"><button class="btn" id="nNew" type="button">New Report</button></div>
@@ -306,7 +325,7 @@ ul.upay li::marker{color:var(--gold)}
   <div class="wrap">
     <div class="topbar">
       <div class="brand"><button class="back" type="button" data-back aria-label="Peeche">‹</button><canvas class="logo" width="80" height="80"></canvas><div><b>HARE KRISHNA VASTU</b><small>Aura Scan Report</small></div></div>
-      <button class="chip on sndBtn" type="button">Sound On</button>
+      <div class="tb-r"><button class="chip themeBtn" type="button">Light</button><button class="chip on sndBtn" type="button">Sound On</button></div>
     </div>
     <div id="rBody"></div>
     <details class="sci" id="sci2"></details>
@@ -348,6 +367,11 @@ const Snd={ac:null,master:null,on:true,drone:null,
  glitch(){for(let i=0;i<4;i++)setTimeout(()=>this.beep(200+Math.random()*1800,.04,.08,'square'),i*35)}
 };
 $$('.sndBtn').forEach(b=>b.addEventListener('click',()=>{Snd.init();Snd.toggle()}));
+/* ---------- light / dark theme (UI, PDF and story image) ---------- */
+const isLight=()=>document.documentElement.dataset.hkv==='light';
+function applyTheme(t){document.documentElement.dataset.hkv=t;$$('.themeBtn').forEach(b=>{b.textContent=b.id==='splashTheme'?(t==='light'?'☾ Dark':'☀ Light'):(t==='light'?'☾':'☀');b.setAttribute('aria-label',t==='light'?'Dark theme':'Light theme')});const m=document.querySelector('meta[name=theme-color]');if(m)m.content=t==='light'?'#f6f3fb':'#07060f'}
+applyTheme(store.get('hkv_theme','dark'));
+$$('.themeBtn').forEach(b=>b.addEventListener('click',()=>{const t=isLight()?'dark':'light';store.set('hkv_theme',t);applyTheme(t);Snd.beep(t==='light'?990:520,.08,.08)}));
 
 /* ================= MANDALA LOGO (16 Vastu zones) ================= */
 function drawMandala(c,t,big){
@@ -1021,13 +1045,18 @@ async function saveBlob(blob,name){let dl=null;try{dl=window.claude&&window.clau
  try{const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),30000);toast('Download shuru ho gaya');return true}catch(e){return false}}
 
 /* ================= DIVINE PDF (4 pages) ================= */
+const fileTag=(name,dob)=>[(name||'').trim().replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,''),dob.split('-').reverse().join('-')].filter(Boolean).join('_');
 const PW=1240,PH=1754,GOLD='#f5bf4f',CY='#58f0e2',TX='#efe9ff',MU='#a59cc9';
+const LIGHT_MAP={'#140d2e':'#fdfbff','#0b0820':'#f7f2ff','#05040b':'#efe7fb','#120c26':'#fdfbff','#07060f':'#e9e2f6','#f5bf4f':'#a8701a','#58f0e2':'#0b7f77','#efe9ff':'#1d1530','#a59cc9':'#62577d','#2a2350':'#dcd2ef','#3a3360':'#b9add6','#fff3d1':'#6b4410','#3ddc84':'#1a8f4f','#2fd38a':'#1a8f4f','#ffc53d':'#a87a06','#ff8f3d':'#c45f17','#ff5a5a':'#cf2f2f','#ffcc4d':'#b07a16','#4fb7ff':'#1f74b8','#ff8a2a':'#e3a04a','#fff6dc':'#7a4e0a','rgba(20,16,48,.9)':'rgba(255,255,255,.94)','rgba(42,22,64,.95)':'rgba(250,242,255,.97)','rgba(255,255,255,.08)':'rgba(60,30,110,.12)','rgba(7,6,15,.75)':'rgba(255,255,255,.88)','rgba(245,191,79,.12)':'rgba(168,112,26,.12)','rgba(245,191,79,.4)':'rgba(168,112,26,.45)','rgba(245,191,79,.5)':'rgba(168,112,26,.55)','rgba(245,191,79,.35)':'rgba(168,112,26,.4)','rgba(245,191,79,.08)':'rgba(168,112,26,.07)'};
+function lightCol(v){if(typeof v!=='string')return v;const k=v.toLowerCase().replace(/\s+/g,'');if(LIGHT_MAP[k])return LIGHT_MAP[k];if(/^#[0-9a-f]{6}$/.test(k)){const n=parseInt(k.slice(1),16),r=n>>16&255,g=n>>8&255,b=n&255;if(.2126*r+.7152*g+.0722*b>150){const f=.62;return '#'+[r,g,b].map(c=>Math.round(c*f).toString(16).padStart(2,'0')).join('')}}return v}
+function themeCtx(x){if(!isLight()||x.__themed)return x;x.__themed=1;const P=CanvasRenderingContext2D.prototype;['fillStyle','strokeStyle'].forEach(prop=>{const d=Object.getOwnPropertyDescriptor(P,prop);Object.defineProperty(x,prop,{configurable:true,get(){return d.get.call(x)},set(v){d.set.call(x,lightCol(v))}})});
+ ['createLinearGradient','createRadialGradient'].forEach(fn=>{const o=P[fn];x[fn]=function(...a){const g=o.apply(x,a),add=g.addColorStop.bind(g);g.addColorStop=(off,c)=>add(off,lightCol(c));return g}});return x}
 function rr(x,a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()}
 function wrap(x,t,X,Y,W,lh){const words=String(t).split(' ');let line='';for(const w of words){const test=line?line+' '+w:w;if(x.measureText(test).width>W&&line){x.fillText(line,X,Y);Y+=lh;line=w}else line=test}if(line){x.fillText(line,X,Y);Y+=lh}return Y}
-function pageBase(n,title,sub){const c=document.createElement('canvas');c.width=PW;c.height=PH;const x=c.getContext('2d');
+function pageBase(n,title,sub){const c=document.createElement('canvas');c.width=PW;c.height=PH;const x=themeCtx(c.getContext('2d'));
  const bg=x.createLinearGradient(0,0,0,PH);bg.addColorStop(0,'#140d2e');bg.addColorStop(.5,'#0b0820');bg.addColorStop(1,'#05040b');x.fillStyle=bg;x.fillRect(0,0,PW,PH);
  const gl=x.createRadialGradient(PW/2,PH*.45,0,PW/2,PH*.45,PW*.7);gl.addColorStop(0,'rgba(245,191,79,.08)');gl.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=gl;x.fillRect(0,0,PW,PH);
- const wm=document.createElement('canvas');wm.width=wm.height=1000;drawMandala(wm,0,false);x.save();x.globalAlpha=.07;x.drawImage(wm,PW/2-500,PH/2-500);x.restore();
+ const wm=document.createElement('canvas');wm.width=wm.height=1000;drawMandala(wm,0,false);x.save();x.globalAlpha=isLight()?.05:.07;x.drawImage(wm,PW/2-500,PH/2-500);x.restore();
  x.strokeStyle=GOLD;x.lineWidth=4;x.strokeRect(40,40,PW-80,PH-80);x.lineWidth=1.5;x.strokeStyle='rgba(245,191,79,.5)';x.strokeRect(56,56,PW-112,PH-112);
  [[40,40],[PW-40,40],[40,PH-40],[PW-40,PH-40]].forEach(([a,b])=>{x.save();x.translate(a,b);x.rotate(Math.PI/4);x.fillStyle=GOLD;x.fillRect(-12,-12,24,24);x.fillStyle='#0b0820';x.fillRect(-6,-6,12,12);x.restore()});
  const lg=document.createElement('canvas');lg.width=lg.height=200;drawMandala(lg,1,false);x.drawImage(lg,90,82,96,96);
@@ -1111,14 +1140,14 @@ async function makePdf(share){const btn=share?$('#sharePdf'):$('#pdfBtn'),old=bt
  try{await Promise.all(['44px Marcellus','italic 32px Marcellus','26px Mukta','700 26px Mukta','22px "IBM Plex Mono"','600 22px "IBM Plex Mono"'].map(f=>document.fonts.load(f).catch(()=>{})));
   if(!window.jspdf)throw new Error('pdf lib');const{jsPDF}=window.jspdf;const doc=new jsPDF({unit:'pt',format:'a4',compress:true});
   buildPdfPages().forEach((p,i)=>{if(i)doc.addPage();doc.addImage(p.toDataURL('image/jpeg',.9),'JPEG',0,0,595.28,841.89)});
-  const blob=doc.output('blob'),name=`HKV-Aura-Report-${R.name.replace(/[^\w]+/g,'-')}.pdf`;
+  const blob=doc.output('blob'),name=`HKV-Aura-Report_${fileTag(R.name,R.dob)}.pdf`;
   if(share){const file=new File([blob],name,{type:'application/pdf'});try{await navigator.share({files:[file],title:'HKV Aura Report',text:shareText(R)})}catch(e){if(e&&e.name!=='AbortError')await saveBlob(blob,name)}}
   else await saveBlob(blob,name);Snd.bell(660,.2)}
  catch(e){toast('PDF nahi ban paayi. Internet check karke dobara try karein.')}
  btn.disabled=false;btn.textContent=old}
 
 /* ================= STORY IMAGE (1080x1920) ================= */
-function buildStory(){const P=R,c=document.createElement('canvas');c.width=1080;c.height=1920;const x=c.getContext('2d');
+function buildStory(){const P=R,c=document.createElement('canvas');c.width=1080;c.height=1920;const x=themeCtx(c.getContext('2d'));
  const bg=x.createLinearGradient(0,0,0,1920);bg.addColorStop(0,'#120c26');bg.addColorStop(1,'#07060f');x.fillStyle=bg;x.fillRect(0,0,1080,1920);
  const lg=document.createElement('canvas');lg.width=lg.height=160;drawMandala(lg,1,false);x.drawImage(lg,60,50,120,120);
  x.fillStyle=GOLD;x.font='52px Marcellus, Georgia, serif';x.fillText('HARE KRISHNA VASTU',200,112);x.fillStyle=MU;x.font='30px Mukta, sans-serif';x.fillText('Harssh Bhardwaj · Aura Scan Report',200,156);
@@ -1132,7 +1161,7 @@ function buildStory(){const P=R,c=document.createElement('canvas');c.width=1080;
  x.fillStyle=TX;x.font='32px Mukta, sans-serif';x.fillText('Nazar Dosh:',60,1565);x.fillStyle=NAZAR[P.nl].c;x.fillText(`${NAZAR[P.nl].n} (${P.nz}%)`,240,1565);
  CHAKRAS.forEach((ck,i)=>{const y=1610+i*34;x.fillStyle=MU;x.font='24px "IBM Plex Mono", monospace';x.fillText(ck.n.toUpperCase(),60,y+18);x.fillStyle='#07060f';rr(x,330,y,600,16,8);x.fill();x.fillStyle=ck.hex;rr(x,330,y,6*P.ch[i],16,8);x.fill();x.fillStyle=TX;x.textAlign='right';x.fillText(P.ch[i]+'%',1020,y+18);x.textAlign='left'});
  x.fillStyle=GOLD;x.font='30px Mukta, sans-serif';x.textAlign='center';x.fillText('Apna aura scan karwaayein · @vastuexpertharssh',540,1880);return c}
-async function saveStory(){Snd.beep(880,.1,.12);const c=buildStory();c.toBlob(async b=>{const ok=await saveBlob(b,`Aura-Story-${R.name.replace(/[^\w]+/g,'-')}.png`);if(!ok)showImg(c)},'image/png')}
+async function saveStory(){Snd.beep(880,.1,.12);const c=buildStory();c.toBlob(async b=>{const ok=await saveBlob(b,`HKV-Aura-Story_${fileTag(R.name,R.dob)}.png`);if(!ok)showImg(c)},'image/png')}
 function showImg(c){const m=$('#modal');m.innerHTML=`<div class="card"><p class="eyebrow">Image par long-press karke save karein</p><img alt="Aura report" src="${c.toDataURL('image/png')}"><button class="btn block" id="mClose" type="button">Band Karein</button></div>`;m.hidden=false;$('#mClose').onclick=()=>m.hidden=true}
 
 /* =====================================================================
@@ -1429,7 +1458,7 @@ async function numPdf(N,share){const btn=share?$('#nShare'):$('#nPdf'),old=btn.t
  try{await Promise.all(['44px Marcellus','26px Mukta','700 26px Mukta','22px "IBM Plex Mono"','600 22px "IBM Plex Mono"'].map(f=>document.fonts.load(f).catch(()=>{})));
   if(!window.jspdf)throw new Error('pdf lib');const{jsPDF}=window.jspdf;const doc=new jsPDF({unit:'pt',format:'a4',compress:true});
   numPdfPages(N).forEach((p,i)=>{if(i)doc.addPage();doc.addImage(p.toDataURL('image/jpeg',.9),'JPEG',0,0,595.28,841.89)});
-  const blob=doc.output('blob'),fname=`HKV-Numerology-${(N.name||N.dob).replace(/[^\w]+/g,'-')}.pdf`;
+  const blob=doc.output('blob'),fname=`HKV-Numerology-Report_${fileTag(N.name,N.dob)}.pdf`;
   if(share){const file=new File([blob],fname,{type:'application/pdf'});try{await navigator.share({files:[file],title:'HKV Numerology Report',text:numSummary(N)})}catch(e){if(e&&e.name!=='AbortError')await saveBlob(blob,fname)}}
   else await saveBlob(blob,fname);Snd.bell(660,.2)}
  catch(e){toast('PDF could not be created. Check your internet and try again.')}
