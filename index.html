@@ -1197,6 +1197,44 @@ const KUA_TPL=['Sleep with your head pointing {g0}, your Sheng Chi (success) dir
 const LUCKY_ENDINGS={1:'1, 3, 5, 9',2:'1, 2, 5',3:'3, 5, 6, 9',4:'1, 5, 6',5:'1, 5, 6',6:'5, 6, 9',7:'1, 5, 6',8:'5, 6',9:'1, 3, 5, 9'};
 const rd=n=>{n=Math.abs(n);while(n>9)n=String(n).split('').reduce((a,b)=>a+ +b,0);return n};
 
+/* ---------- Birth-day (1–31) reading: health, advice, profession, traits, favourable periods ---------- */
+const BD_PROF={1:'Government and semi-government roles, judiciary, politics, medicine, jewellery and engineering.',2:'Electronics, computers, textiles, accounting, shipping, diplomacy, the film industry, chemicals and beverages.',3:'Law and judiciary, defence services, travel and tourism, sports, electronic media and petroleum.',4:'Fields that reward technical expertise: politics, business, philosophy, property, import-export, management consulting and science.',5:'Travel-related work, banking, telecom, electronics, publishing and legal professions.',6:'Government jobs, electronics, fashion, cosmetics, hotels, interior design, import-export, defence and teaching.',7:'Banking, management, import-export, philosophy, teaching, engraving and design, power and water utilities, and editing.',8:'Business, politics, property, civil engineering, metals and philosophy.',9:'Industry, textiles, metals, scientific and technical equipment, interior design, telecom, defence, agriculture and transport.'};
+const BD_DOSH={1:'Pride, anger, conceit, arrogance',2:'Inconsistency, blind faith, moodiness, escapism',3:'Over-indulgence, greed, one-sidedness, pride',4:'Dreamy idealism, an anarchic streak, narrow-mindedness, rebellious ego, erratic behaviour',5:'Instability, extravagance, misplaced trust, dishonesty, deceit, conceit',6:'Fickleness, carelessness, jealousy, laziness, over-indulgence',7:'Intellectual arrogance, obsession, self-delusion, cunning',8:'Arrogance, mistrust, pessimism, ill will',9:'Deceit, impulsiveness, anger, harshness, jealousy'};
+const BD_PER={1:['21 March – 28 April, 21 July – 28 August','1, 4, 7, 10, 13, 19, 28'],2:['20 June – 27 July','2, 4, 7, 11, 20, 29'],3:['19 February – 20 March, 21 November – 27 December','3, 9, 12, 21, 30'],4:['21 June – 27 July, 21 July – 28 August','1, 4, 8, 13, 22, 31'],5:['21 May – 27 June, 21 August – 27 September','5, 6, 14, 23'],6:['20 April – 27 May, 21 September – 27 October','3, 6, 9, 12, 18, 30'],7:['21 June – 27 July','2, 7, 16, 25, 31'],8:['21 December – 26 February','4, 8, 17, 26, 31'],9:['21 March – 26 April, 21 October – 27 November','3, 6, 9, 15, 18, 27, 30']};
+const BD=[null,
+ ['Heart, eyes and circulation need care, and blood pressure may need watching in later life. Take extra care of your health in October, December and January.','Accept help from others in your work; people who take others along go further. Keep arrogance in check.'],
+ ['Your stomach and digestive organs are sensitive; keep meals regular and light.','Work on your self-confidence and avoid overwork in January, February and July.'],
+ ['Overwork can strain your nervous system, and skin issues are possible.','Listen to other people\'s ideas before pushing your own. Your cheerful, enthusiastic nature is a strength; keep indulgences and expenses under control.'],
+ ['You may be prone to coughs, colds and headaches. Avoid self-medication and limit red meat.','You are sensitive and get hurt easily; build emotional resilience.'],
+ ['You may be prone to nervous exhaustion and sleepless nights. Sleep, quiet and rest are your best medicine.','Overwork makes you irritable and short-tempered; daily meditation and yoga keep you balanced.'],
+ ['Nose, throat and upper lungs are sensitive areas; in later years the heart and circulation need attention.','Avoid overwork in May, October and November, keep your emotions steady and be careful with savings.'],
+ ['You may be prone to infections, indigestion and stomach upsets.','Stay away from smoking, alcohol and intoxicants, and drink plenty of fresh fruit juice.'],
+ ['Liver and intestines need care, and headaches are possible.','Keep your diet mostly vegetarian.'],
+ ['You may be prone to fevers and heat-related illness. Avoid alcohol.','Control anger and practise yoga and pranayama to keep the mind calm.'],
+ ['Circulation and blood pressure may need watching in later life.','Get regular eye check-ups, reduce spicy and oily food in later life, hold on to strong values, accept help without hesitation and avoid criticising others.'],
+ ['Your stomach and digestion are sensitive. Eat plenty of cucumber and salad; a monthly lemon-water fast can help.','Avoid restlessness and unnecessary enmity.'],
+ ['Overwork can strain your nervous system, and blood and skin issues are possible.','Meditate for at least 15 minutes daily; occasional fasting on herbal tea and fruit juice keeps you fit. Watch spending on luxuries.'],
+ ['You may face health issues that are hard to diagnose, and back pain is possible.','Take extra care of your health in January, July, August and September.'],
+ ['Avoid overwork and stress, which strain your nerves. Watch for constipation, kidney issues and restlessness; prolonged stress can lead to burnout.','Plan your savings carefully and do 15 minutes of yoga or meditation before work.'],
+ ['Lungs, nerves, throat and heart are sensitive, partly because of your emotional nature. Fresh air, open spaces and morning walks are very beneficial.','Avoid oily food and too many sweets, and take care of your reproductive health.'],
+ ['You may be prone to constipation and indigestion; reproductive health needs care, and memory needs regular exercise in later life.','Stay away from smoking, alcohol and intoxicants, and drink plenty of fresh fruit juice.'],
+ ['You may be prone to breathing issues such as asthma, low mood, weakness in the limbs and constipation.','A mustard-oil body massage is beneficial; favour fruits and vegetables over non-vegetarian food.'],
+ ['Be careful of accidents and injuries, and a surgery is indicated at some stage. Boils, fevers and skin issues are possible.','Show warmth to relatives, keep learning, and avoid legal disputes, especially with close ones, as they can drain your income.'],
+ ['Heart and circulation need care; get your eyes checked regularly and watch blood pressure in later life.','Avoid meat, oily and spicy food, and eat dinner early.'],
+ ['Your stomach and digestive organs are your sensitive areas.','Avoid overwork and take care of your health in January, February and July.'],
+ ['Overwork can make you uneasy and nervous, and skin issues are possible. Watch blood sugar and heart health in later life.','Wake early and do 20–25 minutes of yoga and pranayama, eat at regular times and walk near a river or lake; avoid spicy and oily food.'],
+ ['You may be prone to head and back pain, colds and coughs; some conditions may take time to heal.','Carrot and beetroot juice are helpful; spend money wisely.'],
+ ['You may be prone to gastritis, kidney issues, flu, coughs and skin problems; fatigue and overstrain can lead to burnout.','Fresh juices of all kinds are good for you.'],
+ ['Upper lungs and kidneys need care; watch for constipation.','Limit spicy, oily food and sweets; breathing exercises, morning walks, melons, almonds and walnuts are beneficial.'],
+ ['You may be prone to constipation, indigestion and skin issues, and you tend to sweat a lot.','Morning walks and meditation bring you great benefit.'],
+ ['Liver, kidneys and intestines need care, especially in later years; headaches and constipation are possible.','Avoid excessive worry, which drains you mentally; favour vegetables and fruits over meat.'],
+ ['You may be prone to fevers and stomach ailments; avoid alcohol. A surgery is indicated at some stage.','Keep relationships honest and avoid legal disputes, especially with close ones, to protect your finances.'],
+ ['You tend to overwork and fall ill in October, December and January; build stamina with regular exercise.','Control expenses and save for the future, be careful when trusting others with money, avoid legal disputes, eat less spicy and oily food and get regular eye check-ups.'],
+ ['Your stomach and digestive organs are sensitive; take good care of your digestion.','Avoid overwork in January, February and July; cucumber, salad and a monthly lemon-water fast help. Avoid restlessness.'],
+ ['Watch blood sugar, heart and blood health; overwork can strain your nervous system.','Pomegranates, peaches, almonds and dates boiled in milk are very beneficial for you.'],
+ ['You may be prone to colds and coughs, head and back pain; watch blood pressure and heart health, and some issues may be hard to diagnose.','Beetroot, carrot and fruit juices, and leafy greens such as lettuce and cabbage, will help you a lot.']];
+function birthDay(d){const m=reduce(d);return{d,health:BD[d][0],advice:BD[d][1],prof:BD_PROF[m],dosh:BD_DOSH[m],per:BD_PER[m][0],dates:BD_PER[m][1]}}
+
 function numReport(name,dob,gen){
  name=(name||'').trim();
  const y=+dob.slice(0,4),mo=+dob.slice(5,7),d=+dob.slice(8,10);
@@ -1235,7 +1273,7 @@ function numReport(name,dob,gen){
  const health={drv:H_PLANET[driver],cnd:H_PLANET[conductor],zones:missing.map(n=>({n,t:H_LOSHU[n]})),excess:present.filter(n=>cnt[n]>=3).map(n=>({n,t:H_REP[n]})),elCount,weakEl,strongEl,months:H_MONTHS[driver],py:B.py};
  // lucky
  const lucky={nums:fr,avoid:en,dates:B.luckyDates,days:`${VED[driver].day} (Vedic); ${CB.days} (Cheiro)`,col:`${VED[driver].col} (Vedic); ${CB.col} (Cheiro)`,gem:`${RATNA[driver][0]}; substitute ${RATNA[driver][1]}`,cstone:CB.stone,metal:VED[driver].metal,dir:VED[driver].dir,deity:VED[driver].deity,fast:VED[driver].fast,mantra:MANTRA_EN[driver],mobile:LUCKY_ENDINGS[driver]};
- const NR={name,dob,gen,y,mo,d,age,driver,conductor,kua,maturity,attitude,total,rel,dcTxt,cnt,missing,present,planes,reps,good,bad,kel:KUA_EL[kua],kgroup:[1,3,4,9].includes(kua)?'East group':'West group',pins,curPin,py:B.py,pm:B.pm,pd:B.pd,fore,CB,dayC,totC,nm,health,lucky,fam:CB.fam};
+ const NR={name,dob,gen,y,mo,d,age,driver,conductor,kua,maturity,attitude,total,rel,dcTxt,cnt,missing,present,planes,reps,good,bad,kel:KUA_EL[kua],kgroup:[1,3,4,9].includes(kua)?'East group':'West group',pins,curPin,py:B.py,pm:B.pm,pd:B.pd,fore,CB,dayC,totC,nm,health,lucky,fam:CB.fam,bd:birthDay(d)};
  NR.rem=numRemedies(NR);return NR}
 
 function numRemedies(N){const r=sfc32(...cyrb128('HKV-NUMREM|'+N.name.toLowerCase()+'|'+N.dob));const pick=(a,n=1)=>{const c=[...a],o=[];while(o.length<n&&c.length)o.push(c.splice(Math.floor(r()*c.length),1)[0]);return o};
@@ -1275,6 +1313,9 @@ function renderNumReport(N){
   <dl class="kv"><dt>Strong periods</dt><dd>${N.CB.per}</dd><dt>Lucky days</dt><dd>${N.CB.days}</dd><dt>Lucky colours</dt><dd>${N.CB.col}</dd><dt>Lucky stones</dt><dd>${N.CB.stone}</dd><dt>Harmonious numbers</dt><dd>${N.fam.join(', ')}</dd></dl>
   ${N.dayC?`<p><b style="color:var(--gold)">Birth day ${N.d}: ${N.dayC[0]}</b><br><span class="muted" style="font-size:15px">${N.dayC[1]}</span></p>`:''}
   ${N.totC?`<p><b style="color:var(--gold)">Destiny compound ${N.total}: ${N.totC[0]}</b><br><span class="muted" style="font-size:15px">${N.totC[1]}</span></p>`:''}</div>
+ <div class="card"><p class="eyebrow">Birth Day Reading · Day ${N.d}</p>
+  <dl class="kv"><dt>Best professions</dt><dd>${N.bd.prof}</dd><dt>Traits to watch</dt><dd>${N.bd.dosh}</dd><dt>Favourable periods</dt><dd>${N.bd.per}</dd><dt>Favourable dates</dt><dd>${N.bd.dates}</dd></dl>
+  <p style="font-weight:700">Life advice</p><p class="muted" style="font-size:15px">${N.bd.advice}</p></div>
  ${N.nm?`<div class="card"><p class="eyebrow">Name Number (Cheiro / Chaldean)</p><div class="numtiles"><div class="numtile"><b>${N.nm.comp}</b><small>Compound</small></div><div class="numtile"><b>${N.nm.single}</b><small>Name number</small></div><div class="numtile"><b>${N.driver}</b><small>Driver</small></div></div>
   ${N.nm.cm?`<p><b style="color:var(--gold)">${N.nm.comp}: ${N.nm.cm[0]}</b><br><span class="muted" style="font-size:15px">${N.nm.cm[1]}</span></p>`:''}
   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-weight:700">Name and Driver</span><span class="pill" style="color:${N.nm.cpt[1]}">${N.nm.cpt[0]}</span></div><p class="muted" style="font-size:14px">${N.nm.cpt[2]}</p>
@@ -1294,6 +1335,7 @@ function renderNumReport(N){
   <p style="font-weight:700">Pinnacles and Challenges</p>${N.pins.map((p,i)=>`<div style="border-left:3px solid ${i===N.curPin?'var(--gold)':'var(--line)'};padding-left:10px"><b>${i===N.curPin?'Now · ':''}Age ${p[2]} (${p[3]})</b><br><span style="font-size:15px">Pinnacle ${p[0]}: ${PIN[p[0]]}</span><br><span class="muted" style="font-size:14px">Challenge ${p[1]}: ${CHAL[p[1]]}</span></div>`).join('')}</div>
  <div class="card"><p class="eyebrow">Health and Wellness</p>
   <p class="muted" style="font-size:13px">Based on traditional numerology associations. This is wellness guidance, not medical advice; consult a doctor for any health concern.</p>
+  <div style="border-left:3px solid var(--gold);padding-left:12px"><p style="font-weight:700;color:var(--gold)">Birth-day health reading (Day ${N.d})</p><p style="font-size:15px">${N.bd.health}</p></div>
   <dl class="kv"><dt>Driver ${PL_EN[N.driver]}</dt><dd>${H.drv[0]}</dd><dt>Conductor ${PL_EN[N.conductor]}</dt><dd>${H.cnd[0]}</dd></dl>
   ${H.zones.length?`<p style="font-weight:700">Body zones to care for (missing numbers)</p><ul class="list kami">${H.zones.map(z=>`<li><b>${z.n}</b>: ${z.t}</li>`).join('')}</ul>`:''}
   ${H.excess.length?`<p style="font-weight:700">Excess energy</p><ul class="list kami">${H.excess.map(z=>`<li><b>${String(z.n).repeat(3)}</b>: ${z.t}</li>`).join('')}</ul>`:''}
@@ -1342,6 +1384,7 @@ function numPdfPages(N){const L=N.lucky,H=N.health,DR=DRIVER[N.driver],SUB='HKV 
  H2('Cheiro Method');P(N.CB.txt);KV([['Strong periods',N.CB.per],['Lucky days',N.CB.days],['Lucky colours',N.CB.col],['Lucky stones',N.CB.stone],['Harmonious numbers',N.fam.join(', ')]]);
  if(N.dayC){LB(`Birth day ${N.d} · ${N.dayC[0]}`,GOLD);P(N.dayC[1],{col:MU})}
  if(N.totC){LB(`Destiny compound ${N.total} · ${N.totC[0]}`,GOLD);P(N.totC[1],{col:MU})}
+ H2(`Birth Day Reading · Day ${N.d}`);KV([['Best professions',N.bd.prof],['Traits to watch',N.bd.dosh],['Favourable periods',N.bd.per],['Favourable dates',N.bd.dates]]);LB('Life advice',GOLD);P(N.bd.advice);
  if(N.nm){H2('Name Number (Chaldean)');TL([[N.nm.comp,'Compound'],[N.nm.single,'Name number'],[N.driver,'Driver']]);if(N.nm.cm){LB(`${N.nm.comp} · ${N.nm.cm[0]}`,GOLD);P(N.nm.cm[1],{col:MU})}LB(`Name and Driver · ${N.nm.cpt[0]}`,N.nm.cpt[1]);P(N.nm.cpt[2],{col:MU});if(N.nm.sugg.length){LB('Suggested spellings');N.nm.sugg.forEach(s=>BL(`${s.n}  (${s.comp}/${s.single})`))}}
  H2('Lo Shu Grid');{need(500);const gs=150,gy=y;[4,9,2,3,5,7,8,1,6].forEach((n,i)=>{const cx=X0+(i%3)*(gs+10),cy=gy+Math.floor(i/3)*(gs+10),has=N.cnt[n];if(has){const g=x.createLinearGradient(cx,cy,cx+gs,cy+gs);g.addColorStop(0,GOLD);g.addColorStop(1,'#ff8a2a');x.fillStyle=g}else x.fillStyle='rgba(20,16,48,.9)';rr(x,cx,cy,gs,gs,18);x.fill();x.strokeStyle='rgba(245,191,79,.4)';x.lineWidth=2;rr(x,cx,cy,gs,gs,18);x.stroke();x.textAlign='center';x.fillStyle=has?'#1a0f00':'#3a3360';x.font='600 44px "IBM Plex Mono", monospace';x.fillText(has?String(n).repeat(Math.min(has,3)):n,cx+gs/2,cy+gs/2+15);x.textAlign='left'});
   let ty=gy+20;x.fillStyle=MU;x.font='24px Mukta, sans-serif';[['Present',N.present.join(', ')],['Missing',N.missing.join(', ')||'None'],['Repeated',N.reps.map(r=>String(r.n).repeat(r.k)).join(', ')||'None'],['Element',`${N.health.strongEl} strongest, ${N.health.weakEl} weakest`]].forEach(([a,b])=>{x.fillStyle=MU;x.fillText(a,620,ty);x.fillStyle=TX;x.font='700 26px Mukta, sans-serif';const ls=lines(b,'700 26px Mukta, sans-serif',W-560);ls.forEach((l,i)=>x.fillText(l,620,ty+34+i*32));ty+=34+ls.length*32+20;x.font='24px Mukta, sans-serif'});y=gy+3*(gs+10)+30}
@@ -1353,6 +1396,7 @@ function numPdfPages(N){const L=N.lucky,H=N.health,DR=DRIVER[N.driver],SUB='HKV 
  H2('Life Cycles');TL([[N.py,'Personal Year 2026'],[N.pm,'This Month'],[N.pd,'Today']]);P(PY_EN[N.py]);LB('Four-year forecast');KV(N.fore.map(f=>[`${f.yr} · Year ${f.n}`,`${CYC_SHORT[f.n]}. ${PY_EN[f.n].split('.')[0]}.`]));
  LB('Pinnacles and Challenges');N.pins.forEach((p,i)=>{need(130);if(i===N.curPin){x.fillStyle='rgba(245,191,79,.12)';rr(x,X0-14,y-34,W+28,118,14);x.fill()}x.fillStyle=i===N.curPin?GOLD:TX;x.font='700 25px Mukta, sans-serif';x.fillText(`${i===N.curPin?'NOW · ':''}Age ${p[2]}  (${p[3]})`,X0,y);y+=34;x.fillStyle=TX;x.font='24px Mukta, sans-serif';x.fillText(`Pinnacle ${p[0]}: ${PIN[p[0]]}`,X0,y);y+=32;x.fillStyle=MU;x.fillText(`Challenge ${p[1]}: ${CHAL[p[1]]}`,X0,y);y+=46});
  H2('Health and Wellness');P('Based on traditional numerology associations. This is wellness guidance, not medical advice; consult a doctor for any health concern.',{col:MU,f:'21px Mukta, sans-serif',lh:30});
+ LB(`Birth-day health reading · Day ${N.d}`,GOLD);P(N.bd.health,{after:18});
  KV([[`Driver · ${PL_EN[N.driver]}`,H.drv[0]],[`Conductor · ${PL_EN[N.conductor]}`,H.cnd[0]],['Daily care',H.drv[1]],['Extra care months',H.months]]);
  if(H.zones.length){LB('Body zones to care for','#ff8f3d');H.zones.forEach(z=>BL(`${z.n} missing · ${z.t}`,'#ff8f3d'))}
  if(H.excess.length){LB('Excess energy','#ff8f3d');H.excess.forEach(z=>BL(z.t,'#ff8f3d'))}
