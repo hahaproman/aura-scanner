@@ -168,6 +168,10 @@ ul.upay li::marker{color:var(--gold)}
 .modecard b{font-family:var(--fd);font-weight:400;font-size:22px;color:var(--gold);display:block}
 .modecard span{color:var(--muted);font-size:14px;display:block}
 .modecard div{min-width:0}
+.cp-canvas{width:min(100%,440px);aspect-ratio:1;display:block;margin:0 auto;touch-action:none;max-width:100%}
+.cp-deg{font-family:var(--fd);font-size:44px;line-height:1.1}
+#cpMode .chip,#pathTabs .chip{padding:8px 14px}
+input[type=range]{padding:0;accent-color:var(--gold)}
 .shot{border-radius:14px;border:1px solid var(--line);width:100%;display:block}
 .numtiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .numtile{background:var(--void);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;min-width:0}
@@ -213,6 +217,7 @@ ul.upay li::marker{color:var(--gold)}
       <h2 style="font-size:28px">Aaj kya dekhna hai?</h2>
     </div>
     <button class="modecard" type="button" data-mode="aura"><canvas class="mc-aura" width="128" height="128" aria-hidden="true"></canvas><div><b>Aura Scan</b><span>Live camera body scan, chakra, nazar dosh aur numerology ke saath poori report</span></div></button>
+    <button class="modecard" type="button" id="openCompass"><canvas class="mc-comp" width="128" height="128" aria-hidden="true"></canvas><div><b>Vastu Compass</b><span>Live compass, 16 aur 32 zone, floor plan overlay, capture aur location</span></div></button>
     <button class="modecard" type="button" id="openPath"><canvas class="mc-path" width="128" height="128" aria-hidden="true"></canvas><div><b>Path Sangrah</b><span>Aarti, Kavach, Stotra, Mantra, Nav Durga, Sundar Kand aur Pujan Samagri</span></div></button>
     <button class="modecard" type="button" data-mode="num"><canvas class="mc-num" width="128" height="128" aria-hidden="true"></canvas><div><b>Numerology Report</b><span>Sirf janm tithi se poori English report: Vedic, Cheiro, Lo Shu, yog, health aur upay</span></div></button>
     <p class="foot">© Hare Krishna Vastu · Harssh Bhardwaj</p>
@@ -281,6 +286,37 @@ ul.upay li::marker{color:var(--gold)}
       <label class="btn block" for="galIn">Gallery se Photo</label>
       <input id="galIn" type="file" accept="image/*" hidden>
     </div>
+  </div>
+</section>
+
+<!-- ============ VASTU COMPASS ============ -->
+<section id="compass" class="screen" hidden>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand"><button class="back" type="button" data-back aria-label="Peeche">‹</button><canvas class="logo" width="80" height="80"></canvas><div><b>HARE KRISHNA VASTU</b><small>Vastu Compass</small></div></div>
+      <div class="tb-r"><button class="chip themeBtn" type="button">Light</button><button class="chip on sndBtn" type="button">Sound On</button></div>
+    </div>
+    <div style="text-align:center;display:flex;flex-direction:column;gap:2px">
+      <div id="cpDeg" class="cp-deg">0° N</div>
+      <div id="cpZone" class="muted" style="font-size:15px"></div>
+      <div id="cpStatus" style="font-family:var(--fm);font-size:12px"></div>
+    </div>
+    <canvas id="cpCanvas" class="cp-canvas" width="880" height="880" aria-label="Vastu compass dial"></canvas>
+    <div class="row" id="cpMode" style="justify-content:center"><button class="chip on" type="button" data-m="16" style="flex:0 0 auto">16 Zones</button><button class="chip" type="button" data-m="32" style="flex:0 0 auto">32 Zones</button></div>
+    <div class="row"><button class="btn primary" id="cpCap" type="button">Capture</button><button class="btn" id="cpLock" type="button">Lock</button></div>
+    <div class="row"><label class="btn cyan" for="cpPlanIn">Upload Floor Plan</label><input id="cpPlanIn" type="file" accept="image/*" hidden><button class="btn" id="cpManual" type="button">Manual Mode</button></div>
+    <div class="card" id="cpPlanCtl" hidden>
+      <label class="f" for="cpRot">Floor plan ghumayein<input id="cpRot" type="range" min="-180" max="180" value="0"></label>
+      <label class="f" for="cpAlpha">Floor plan ki dikhaavat<input id="cpAlpha" type="range" min="20" max="100" value="85"></label>
+      <button class="btn small danger" id="cpPlanX" type="button">Floor plan hatayein</button>
+    </div>
+    <div class="card">
+      <p class="eyebrow">Geo-Coordinate</p>
+      <p id="cpGeo" class="muted">Location le rahe hain…</p>
+      <a class="btn small" id="cpMap" target="_blank" rel="noopener" hidden>Google Map mein kholein</a>
+      <p class="muted" style="font-size:13px">Sahi reading ke liye phone ko seedha (flat) rakhein, metal aur electronic cheezon se door rahein, aur pehle phone ko hawa mein 8 ke aakaar mein 2–3 baar ghumayein. Sensor na mile toh Manual Mode mein ungli se dial ghuma sakte hain.</p>
+    </div>
+    <p class="foot">© Hare Krishna Vastu · Harssh Bhardwaj</p>
   </div>
 </section>
 
@@ -589,7 +625,7 @@ $('#sci1').innerHTML=SCI;$('#sci2').innerHTML=SCI;
 
 /* ================= NAV + PHONE BACK BUTTON ================= */
 let screen='splash',resRaf=0;
-function show(id,push=true){['splash','mode','form','numres','result','path','reader'].forEach(s=>$('#'+s).hidden=s!==id);window.scrollTo(0,0);screen=id;
+function show(id,push=true){if(id!=='compass'&&screen==='compass')closeCompass();['splash','mode','form','numres','result','path','reader','compass'].forEach(s=>$('#'+s).hidden=s!==id);window.scrollTo(0,0);screen=id;
  const was=splashOn;splashOn=id==='splash';if(splashOn&&!was)requestAnimationFrame(splashLoop);
  if(id!=='result'){cancelAnimationFrame(resRaf);try{window.speechSynthesis&&speechSynthesis.cancel()}catch(e){}}
  if(push)try{history.pushState({s:id},'')}catch(e){}}
@@ -609,7 +645,7 @@ function setMode(m){mode=m;const A=m==='aura';
  $('#fSub').textContent=A?'Scan shuru karne ke liye apni details bharein.':'Janm tithi zaroori hai. Naam daalne se Cheiro naamank bhi aayega.';
  $('#pnameLbl').textContent=A?'Poora naam':'Poora naam (optional)';
  $('#fBtn').textContent=A?'Live Aura Scan Shuru Karein':'Numerology Report Banayein'}
-function drawModeIcons(){const a=$('.mc-aura');if(a)drawMandala(a,0,false);const pc=$('.mc-path');if(pc){const x=pc.getContext('2d');x.clearRect(0,0,128,128);const g=x.createRadialGradient(64,58,4,64,58,60);g.addColorStop(0,'rgba(255,200,90,.9)');g.addColorStop(1,'rgba(255,138,42,0)');x.fillStyle=g;x.beginPath();x.arc(64,58,60,0,7);x.fill();x.fillStyle='#f5bf4f';x.beginPath();x.ellipse(64,92,34,10,0,0,7);x.fill();x.fillStyle='#ffe6a8';x.beginPath();x.moveTo(64,30);x.quadraticCurveTo(82,60,64,82);x.quadraticCurveTo(46,60,64,30);x.fill()}const n=$('.mc-num');if(n){const x=n.getContext('2d');x.clearRect(0,0,128,128);[4,9,2,3,5,7,8,1,6].forEach((v,i)=>{const cx=16+(i%3)*33,cy=16+Math.floor(i/3)*33;x.fillStyle=i%2?'rgba(245,191,79,.25)':'rgba(245,191,79,.85)';x.beginPath();x.roundRect?x.roundRect(cx,cy,30,30,6):x.rect(cx,cy,30,30);x.fill();x.fillStyle=i%2?'#f5bf4f':'#1a0f00';x.font='600 16px "IBM Plex Mono",monospace';x.textAlign='center';x.fillText(v,cx+15,cy+21)})}}
+function drawModeIcons(){const mc=$('.mc-comp');if(mc){try{drawCompass(mc.getContext('2d'),128,0,{mode:16,light:isLight()})}catch(e){}}const a=$('.mc-aura');if(a)drawMandala(a,0,false);const pc=$('.mc-path');if(pc){const x=pc.getContext('2d');x.clearRect(0,0,128,128);const g=x.createRadialGradient(64,58,4,64,58,60);g.addColorStop(0,'rgba(255,200,90,.9)');g.addColorStop(1,'rgba(255,138,42,0)');x.fillStyle=g;x.beginPath();x.arc(64,58,60,0,7);x.fill();x.fillStyle='#f5bf4f';x.beginPath();x.ellipse(64,92,34,10,0,0,7);x.fill();x.fillStyle='#ffe6a8';x.beginPath();x.moveTo(64,30);x.quadraticCurveTo(82,60,64,82);x.quadraticCurveTo(46,60,64,30);x.fill()}const n=$('.mc-num');if(n){const x=n.getContext('2d');x.clearRect(0,0,128,128);[4,9,2,3,5,7,8,1,6].forEach((v,i)=>{const cx=16+(i%3)*33,cy=16+Math.floor(i/3)*33;x.fillStyle=i%2?'rgba(245,191,79,.25)':'rgba(245,191,79,.85)';x.beginPath();x.roundRect?x.roundRect(cx,cy,30,30,6):x.rect(cx,cy,30,30);x.fill();x.fillStyle=i%2?'#f5bf4f':'#1a0f00';x.font='600 16px "IBM Plex Mono",monospace';x.textAlign='center';x.fillText(v,cx+15,cy+21)})}}
 function openNum(name,dob,gen,save){const N=numReport(name,dob,gen);renderNumReport(N);if(save){const h=store.get(HK,[]).filter(x=>!(x.mode==='num'&&(x.name||'').toLowerCase()===(name||'').toLowerCase()&&x.dob===dob));h.unshift({name:name||'',dob,gen,mode:'num',ts:Date.now()});store.set(HK,h.slice(0,12))}Snd.bell(660,.25);show('numres',screen!=='numres')}
 $('#pform').addEventListener('submit',e=>{e.preventDefault();Snd.init();
  const name=$('#pname').value.trim(),dob=$('#pdob').value,gen=$('#pgen').value,err=$('#ferr');
@@ -1480,6 +1516,101 @@ async function openReader(cat,i){try{await loadLib()}catch(e){toast('Path load n
 $('#rdPlus').addEventListener('click',()=>{rdSize=Math.min(30,rdSize+2);$('#rdBody').style.fontSize=rdSize+'px';store.set('hkv_rd',rdSize)});
 $('#rdMinus').addEventListener('click',()=>{rdSize=Math.max(14,rdSize-2);$('#rdBody').style.fontSize=rdSize+'px';store.set('hkv_rd',rdSize)});
 $('#openPath').addEventListener('click',()=>{Snd.beep(700,.08,.1);openPath()});
+/* ================= HKV VASTU COMPASS (16 zones / 32 padas) ================= */
+const Z16=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+const Z16_NAME={N:'North',NNE:'North-North-East',NE:'North-East',ENE:'East-North-East',E:'East',ESE:'East-South-East',SE:'South-East',SSE:'South-South-East',S:'South',SSW:'South-South-West',SW:'South-West',WSW:'West-South-West',W:'West',WNW:'West-North-West',NW:'North-West',NNW:'North-North-West'};
+const Z16_COL=['#3b4a6b','#2f6db5','#2a8fd1','#3aa6d8','#25a85a','#7cb342','#d84040','#e5603a','#f08a2c','#f5a623','#f2c94c','#f2df7a','#cfcfae','#bdbdbd','#d6d6d6','#8a93a8'];
+// 32 entrance padas: each side of 90° split into 8 parts of 11.25°, numbered clockwise
+const PADA=[['N',315,['Roga','Naag','Mukhya','Bhallat','Soma','Bhujag','Aditi','Diti']],['E',45,['Shikhi','Parjanya','Jayant','Mahendra','Surya','Satya','Bhrisha','Antariksh']],['S',135,['Anil','Pusha','Vitatha','Grihakshat','Yama','Gandharva','Bhringraj','Mriga']],['W',225,['Pitra','Dauvarik','Sugreev','Pushpdant','Varun','Asur','Shosh','Papyakshma']]];
+const P32=[];PADA.forEach(([side,start,names])=>names.forEach((n,i)=>P32.push({code:side+(i+1),deity:n,a0:(start+i*11.25)%360})));
+const norm=a=>((a%360)+360)%360;
+function zone16(h){return Z16[Math.floor(norm(h+11.25)/22.5)%16]}
+function pada32(h){h=norm(h);return P32.find(p=>{const d=norm(h-p.a0);return d<11.25})}
+function lum(hex){const n=parseInt(hex.slice(1),16);return .2126*(n>>16&255)+.7152*(n>>8&255)+.0722*(n&255)}
+
+function drawCompass(x,S,heading,o){const c=S/2,dark=!o.light;x.save();x.clearRect(0,0,S,S);
+ const Rn=S*.452,Rt1=S*.402,Rt2=S*.42,Rr1=S*.318,Rr2=S*.392,Rin=S*.318;const flip=a=>{const sa=norm(a-heading);return sa>90&&sa<270};
+ const fg=dark?'#efe9ff':'#1d1530',mu=dark?'rgba(239,233,255,.55)':'rgba(29,21,48,.55)';
+ x.translate(c,c);
+ // floor plan stays upright with the phone; the dial turns around it
+ x.save();x.beginPath();x.arc(0,0,Rin,0,7);x.clip();x.fillStyle=dark?'#0e0b1f':'#ffffff';x.fillRect(-Rin,-Rin,Rin*2,Rin*2);
+ if(o.plan){const im=o.plan,s=Math.min(Rin*1.9/im.width,Rin*1.9/im.height);x.save();x.rotate(o.planRot*Math.PI/180);x.globalAlpha=o.planAlpha;x.drawImage(im,-im.width*s/2,-im.height*s/2,im.width*s,im.height*s);x.restore()}
+ x.restore();
+ x.rotate(-heading*Math.PI/180);
+ // zone ring
+ if(o.mode===16){Z16.forEach((z,i)=>{const a0=(i*22.5-11.25-90)*Math.PI/180,a1=a0+22.5*Math.PI/180;x.beginPath();x.arc(0,0,Rr2,a0,a1);x.arc(0,0,Rr1,a1,a0,true);x.closePath();x.fillStyle=Z16_COL[i];x.fill()})}
+ else{P32.forEach(p=>{const mid=norm(p.a0+5.625),col=Z16_COL[Math.floor(norm(mid+11.25)/22.5)%16];const a0=(p.a0-90)*Math.PI/180,a1=a0+11.25*Math.PI/180;x.beginPath();x.arc(0,0,Rr2,a0,a1);x.arc(0,0,Rr1,a1,a0,true);x.closePath();x.fillStyle=col;x.fill();x.strokeStyle='rgba(0,0,0,.25)';x.lineWidth=S/600;x.stroke()})}
+ // spokes on the inner disk
+ x.strokeStyle=dark?'rgba(239,233,255,.22)':'rgba(29,21,48,.22)';x.lineWidth=S/700;const step=o.mode===16?22.5:11.25,off=o.mode===16?-11.25:0;
+ for(let a=0;a<360;a+=step){const r=(a+off-90)*Math.PI/180;x.beginPath();x.moveTo(0,0);x.lineTo(Math.cos(r)*Rr1,Math.sin(r)*Rr1);x.stroke()}
+ // main N-S / E-W axes
+ x.strokeStyle='#d33';x.lineWidth=S/320;x.beginPath();x.moveTo(0,-Rr1);x.lineTo(0,Rr1);x.stroke();x.strokeStyle=dark?'rgba(239,233,255,.5)':'rgba(29,21,48,.45)';x.lineWidth=S/500;x.beginPath();x.moveTo(-Rr1,0);x.lineTo(Rr1,0);x.stroke();
+ // ring labels
+ x.textAlign='center';x.textBaseline='middle';
+ if(o.mode===16){Z16.forEach((z,i)=>{const a=i*22.5*Math.PI/180;x.save();x.rotate(a);x.translate(0,-(Rr1+Rr2)/2);if(flip(i*22.5))x.rotate(Math.PI);x.fillStyle=lum(Z16_COL[i])>150?'#1a1a1a':'#ffffff';x.font=`700 ${S*.036}px "IBM Plex Mono",monospace`;x.fillText(z,0,0);x.restore()})}
+ else{P32.forEach((p,i)=>{const mid=norm(p.a0+5.625),a=mid*Math.PI/180,col=Z16_COL[Math.floor(norm(mid+11.25)/22.5)%16];x.save();x.rotate(a);x.translate(0,-(Rr1+Rr2)/2);if(flip(mid))x.rotate(Math.PI);x.fillStyle=lum(col)>150?'#1a1a1a':'#ffffff';x.font=`700 ${S*.028}px "IBM Plex Mono",monospace`;x.fillText(p.code,0,0);x.restore();
+   x.save();x.rotate(a);x.translate(0,-(Rr1-S*.06));x.rotate(norm(mid-heading)<180?-Math.PI/2:Math.PI/2);x.fillStyle=mu;x.font=`${S*.02}px Mukta,sans-serif`;x.fillText(p.deity,0,0);x.restore()})}
+ // degree ticks and numbers
+ x.strokeStyle=fg;for(let d=0;d<360;d++){const r=(d-90)*Math.PI/180,len=d%10===0?Rt2-Rt1+S*.012:d%5===0?(Rt2-Rt1)*.8:(Rt2-Rt1)*.5;x.lineWidth=d%10===0?S/420:S/900;x.beginPath();x.moveTo(Math.cos(r)*(Rt2-len),Math.sin(r)*(Rt2-len));x.lineTo(Math.cos(r)*Rt2,Math.sin(r)*Rt2);x.stroke()}
+ x.fillStyle=fg;x.font=`${S*.027}px "IBM Plex Mono",monospace`;for(let d=0;d<360;d+=10){x.save();x.rotate(d*Math.PI/180);x.translate(0,-Rn);if(flip(d))x.rotate(Math.PI);x.fillText(d+'°',0,0);x.restore()}
+ x.lineWidth=S/400;x.strokeStyle=fg;x.beginPath();x.arc(0,0,Rr2,0,7);x.stroke();x.beginPath();x.arc(0,0,Rr1,0,7);x.stroke();
+ x.restore();
+ // centre seal: stays upright
+ x.save();x.translate(c,c);const sr=S*.105;const g=x.createRadialGradient(0,0,0,0,0,sr*1.6);g.addColorStop(0,dark?'rgba(245,191,79,.35)':'rgba(168,112,26,.18)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.beginPath();x.arc(0,0,sr*1.6,0,7);x.fill();
+ x.fillStyle=dark?'rgba(14,11,31,.85)':'rgba(255,255,255,.9)';x.beginPath();x.arc(0,0,sr,0,7);x.fill();x.strokeStyle=dark?'#f5bf4f':'#a8701a';x.lineWidth=S/260;x.stroke();
+ x.fillStyle=dark?'#f5bf4f':'#a8701a';x.textAlign='center';x.textBaseline='middle';x.font=`${S*.085}px Marcellus,Georgia,serif`;x.fillText('HKV',0,-S*.004);x.font=`${S*.018}px "IBM Plex Mono",monospace`;x.fillStyle=mu;x.fillText('VASTU',0,S*.05);x.restore();
+ // fixed heading marker
+ x.fillStyle='#2f7bff';x.beginPath();x.moveTo(c-S*.024,S*.004);x.lineTo(c+S*.024,S*.004);x.lineTo(c,S*.034);x.closePath();x.fill();
+ x.strokeStyle='rgba(47,123,255,.5)';x.lineWidth=S/500;x.setLineDash([S/120,S/120]);x.beginPath();x.moveTo(c,c-Rt2);x.lineTo(c,c-S*.11);x.stroke();x.setLineDash([]);
+}
+
+const CP={h:0,raw:null,live:false,locked:false,mode:16,plan:null,planRot:0,planAlpha:.85,raf:0,lat:null,lon:null,acc:null,lastEvt:0,manual:false,drag:null,wake:null};
+function cpOri(e){let h=null;if(e.webkitCompassHeading!=null)h=e.webkitCompassHeading;else if(e.absolute&&e.alpha!=null)h=360-e.alpha;else if(e.type==='deviceorientationabsolute'&&e.alpha!=null)h=360-e.alpha;if(h==null)return;
+ const so=(screen.orientation&&screen.orientation.angle)||window.orientation||0;CP.raw=norm(h+so);CP.lastEvt=performance.now();if(e.webkitCompassAccuracy!=null)CP.acc=e.webkitCompassAccuracy}
+async function openCompass(){show('compass');CP.mode=+store.get('hkv_cmode',16)||16;$$('#cpMode button').forEach(b=>b.classList.toggle('on',+b.dataset.m===CP.mode));
+ try{if(typeof DeviceOrientationEvent!=='undefined'&&DeviceOrientationEvent.requestPermission){const r=await DeviceOrientationEvent.requestPermission();if(r!=='granted')CP.manual=true}}catch(e){}
+ window.addEventListener('deviceorientationabsolute',cpOri);window.addEventListener('deviceorientation',cpOri);
+ try{CP.wake=await navigator.wakeLock?.request('screen')}catch(e){}
+ if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{CP.lat=p.coords.latitude;CP.lon=p.coords.longitude;cpInfo()},()=>{$('#cpGeo').textContent='Location permission nahi mili'},{enableHighAccuracy:true,timeout:15000});
+ cancelAnimationFrame(CP.raf);CP.raf=requestAnimationFrame(cpTick)}
+function closeCompass(){window.removeEventListener('deviceorientationabsolute',cpOri);window.removeEventListener('deviceorientation',cpOri);cancelAnimationFrame(CP.raf);if(CP.wake){CP.wake.release().catch(()=>{});CP.wake=null}}
+function cpTick(now){CP.raf=requestAnimationFrame(cpTick);const cv=$('#cpCanvas');if(!cv||$('#compass').hidden)return;
+ const live=CP.raw!=null&&now-CP.lastEvt<1500&&!CP.manual;CP.live=live;
+ if(live&&!CP.locked){const d=norm(CP.raw-CP.h+180)-180;CP.h=norm(CP.h+d*.18)}
+ const S=cv.width;drawCompass(cv.getContext('2d'),S,CP.h,{mode:CP.mode,light:isLight(),plan:CP.plan,planRot:CP.planRot,planAlpha:CP.planAlpha});
+ if(now-(CP.lastInfo||0)>120){CP.lastInfo=now;cpInfo()}}
+function cpInfo(){const h=Math.round(CP.h)%360,z=zone16(h),p=pada32(h);
+ $('#cpDeg').textContent=`${h}° ${z}`;$('#cpZone').textContent=`${Z16_NAME[z]} · Pada ${p.code} (${p.deity})`;
+ $('#cpStatus').textContent=CP.locked?'Locked':CP.live?'Live sensor':CP.raw==null&&!CP.manual?'Sensor dhoondh rahe hain… (ya ungli se ghumayein)':'Manual · ungli se dial ghumayein';
+ $('#cpStatus').style.color=CP.locked?'var(--gold)':CP.live?'var(--good)':'var(--warn)';
+ $('#cpGeo').textContent=CP.lat!=null?`Lat ${CP.lat.toFixed(6)} · Long ${CP.lon.toFixed(6)}`:($('#cpGeo').textContent||'Location le rahe hain…');
+ $('#cpMap').hidden=CP.lat==null;if(CP.lat!=null)$('#cpMap').href=`https://www.google.com/maps/search/?api=1&query=${CP.lat},${CP.lon}`;
+ $('#cpLock').textContent=CP.locked?'Unlock':'Lock';$('#cpPlanCtl').hidden=!CP.plan}
+function cpAngle(e){const r=$('#cpCanvas').getBoundingClientRect();return Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))*180/Math.PI}
+function cpBind(){const cv=$('#cpCanvas');
+ cv.addEventListener('pointerdown',e=>{if(CP.live&&!CP.locked)return;CP.drag={a:cpAngle(e),h:CP.h};cv.setPointerCapture(e.pointerId)});
+ cv.addEventListener('pointermove',e=>{if(!CP.drag)return;CP.h=norm(CP.drag.h-(cpAngle(e)-CP.drag.a))});
+ cv.addEventListener('pointerup',()=>{CP.drag=null});cv.addEventListener('pointercancel',()=>{CP.drag=null});
+ $$('#cpMode button').forEach(b=>b.addEventListener('click',()=>{CP.mode=+b.dataset.m;store.set('hkv_cmode',CP.mode);$$('#cpMode button').forEach(x=>x.classList.toggle('on',x===b));Snd.beep(760,.06,.08)}));
+ $('#cpLock').addEventListener('click',()=>{CP.locked=!CP.locked;vib(20);Snd.beep(CP.locked?520:880,.08,.1);cpInfo()});
+ $('#cpManual').addEventListener('click',()=>{CP.manual=!CP.manual;$('#cpManual').classList.toggle('on',CP.manual);cpInfo()});
+ $('#cpPlanIn').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{CP.plan=im;CP.planRot=0;$('#cpRot').value=0;cpInfo();toast('Floor plan lag gaya. Ghar ki deewar ke saath phone seedha rakh ke Lock karein.')};im.src=fr.result};fr.readAsDataURL(f);e.target.value=''});
+ $('#cpRot').addEventListener('input',e=>{CP.planRot=+e.target.value});
+ $('#cpAlpha').addEventListener('input',e=>{CP.planAlpha=+e.target.value/100});
+ $('#cpPlanX').addEventListener('click',()=>{CP.plan=null;cpInfo()});
+ $('#cpCap').addEventListener('click',cpCapture)}
+async function cpCapture(){Snd.beep(1200,.06,.1);vib([20,30,20]);const L=isLight(),W=1080,H=1500,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+ x.fillStyle=L?'#f6f3fb':'#07060f';x.fillRect(0,0,W,H);const lg=document.createElement('canvas');lg.width=lg.height=160;drawMandala(lg,1,false);x.drawImage(lg,60,50,100,100);
+ x.fillStyle=L?'#a8701a':'#f5bf4f';x.font='46px Marcellus, Georgia, serif';x.fillText('HARE KRISHNA VASTU',180,105);x.fillStyle=L?'#62577d':'#a59cc9';x.font='26px Mukta, sans-serif';x.fillText('HKV Vastu Compass · Harssh Bhardwaj',182,142);
+ const dc=document.createElement('canvas');dc.width=dc.height=960;drawCompass(dc.getContext('2d'),960,CP.h,{mode:CP.mode,light:L,plan:CP.plan,planRot:CP.planRot,planAlpha:CP.planAlpha});x.drawImage(dc,60,190);
+ const h=Math.round(CP.h)%360,z=zone16(h),p=pada32(h);x.textAlign='center';x.fillStyle=L?'#1d1530':'#efe9ff';x.font='84px Marcellus, Georgia, serif';x.fillText(`${h}° ${z}`,W/2,1250);
+ x.fillStyle=L?'#62577d':'#a59cc9';x.font='32px Mukta, sans-serif';x.fillText(`${Z16_NAME[z]} · Pada ${p.code} (${p.deity}) · ${CP.mode} zone view`,W/2,1305);
+ x.fillText(CP.lat!=null?`Lat ${CP.lat.toFixed(6)} · Long ${CP.lon.toFixed(6)}`:'Location not available',W/2,1350);x.fillText(new Date().toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}),W/2,1395);
+ x.fillStyle=L?'#a8701a':'#f5bf4f';x.font='28px Mukta, sans-serif';x.fillText('@vastuexpertharssh · @harekrishnavastu',W/2,1460);
+ c.toBlob(async b=>{const ok=await saveBlob(b,`HKV-Compass_${h}deg-${z}_${new Date().toISOString().slice(0,10)}.png`);if(!ok)showImg(c)},'image/png')}
+
+cpBind();
+$('#openCompass').addEventListener('click',()=>{Snd.beep(700,.08,.1);const cv=$('#cpCanvas');openCompass();requestAnimationFrame(()=>{const w=cv.getBoundingClientRect().width||400;const px=Math.round(w*Math.min(2,devicePixelRatio||1));if(px>100){cv.width=px;cv.height=px}})});
 
 $('#nNew').addEventListener('click',()=>{$('#pname').value='';$('#pdob').value='';setMode('num');history.back()});
 $('#againBtn').addEventListener('click',()=>{cancelAnimationFrame(resRaf);openStage()});
